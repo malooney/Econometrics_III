@@ -1,0 +1,30 @@
+---
+title: "Untitled"
+author: "Matthew Aaron Looney"
+date: "9/11/2017"
+output: pdf_document
+---
+
+```{r}
+system.time({
+temp <- matrix(nrow = 1000, ncol = 3)
+i <- 1
+n=100000
+
+for(i in 1:nrow(temp)){
+e <- rnorm(n=n, mean=0, sd=5)
+x1 <- rnorm(n=n, mean=100, sd=7)
+x2 <- rnorm(n=n, mean=1000, sd=10)
+y <- 5+ 4* x1+ 0.7* x2 +e
+
+b_ols <- lm(y~ x1+ x2)
+
+temp[i, 1] <- b_ols$coefficients[1]
+temp[i, 2] <- b_ols$coefficients[2]
+temp[i, 3] <- b_ols$coefficients[3]
+i <- i+1
+}
+})
+
+```
+
