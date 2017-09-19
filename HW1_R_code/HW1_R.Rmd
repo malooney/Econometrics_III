@@ -9,27 +9,26 @@ output: pdf_document
 
 system.time({
   
-n=1e4 # sample size
-reps <- 1e3 # number of ols iterations
-i <- 1
-temp <- matrix(nrow = reps, ncol = 3)
+n=20 # sample size
+reps <- 1e2 # number of ols iterations
+i <- 1 # counter
+temp <- matrix(nrow = reps, ncol = 3) # matrix to stuff results into dim= "reps" X 3
 
 for(i in 1:reps){
   
-e <- rnorm(n=n, mean=0, sd=5)
-x1 <- rnorm(n=n, mean=100, sd=7)
-x2 <- rnorm(n=n, mean=1000, sd=10)
+e <- rnorm(n=n, mean=0, sd=5) # n-random normal draws for error term
+x1 <- rnorm(n=n, mean=100, sd=7) # n-random normal draws for x1 data
+x2 <- rnorm(n=n, mean=1000, sd=10) # n-random normal draws for x2 data
 
-y <- 5+ 4* x1+ 0.7* x2 +e
+y <- 5+ 4* x1+ 0.7* x2 +e # construct model
 
-X <- matrix(c(rep(1, n), x1, x2), nrow=n, ncol=3)
+X <- matrix(c(rep(1, n), x1, x2), nrow=n, ncol=3) # gather X-data into single matrix
 
-b_ols <- solve(crossprod(X, X)) %*% crossprod(X, y)
+b_ols <- solve(crossprod(X, X)) %*% crossprod(X, y) # faster to use matrix algebra over lm function
 
 temp[i, 1] <- b_ols[1]
 temp[i, 2] <- b_ols[2]
 temp[i, 3] <- b_ols[3]
-
 
 i <- i+1
 }
@@ -37,59 +36,44 @@ i <- i+1
   
 dimnames(temp) <- list(c(), c("beta_0", "beta_1", "beta_2"))
   
-mu_betas <- list()
-mu_betas$beta_0 <- mean(temp[,1])
-mu_betas$beta_1 <- mean(temp[,2])
-mu_betas$beta_2 <- mean(temp[,3])
+mu_betas <- matrix(nrow=3, ncol=1)
+mu_betas[1,1] <- mean(temp[,1])
+mu_betas[2,1] <- mean(temp[,2])
+mu_betas[3,1] <- mean(temp[,3])
+dimnames(mu_betas) <- list(c(), c("betas"))
 mu_betas
 
-```
+ehat <- y-(X %*% b_ols)
 
-```{r, message=FALSE, include=FALSE, results='asis', cache=F, eval=FALSE}
+sigma2 <- (t(ehat) %*% ehat) / (n-3)
+sigma2 <- as.numeric(sigma2)
 
-# using apply function
-
-
-# n=1e4
-# rep= 1e3
-# model_data <- function(n=n){
-# 
-# e <- rnorm(n=n, mean=0, sd=5)
-# x1 <- rnorm(n=n, mean=100, sd=7)
-# x2 <- rnorm(n=n, mean=1000, sd=10)
-# y <- 5+ 4* x1+ 0.7* x2 +e
-# 
-# b_ols <- lm(y~ x1+ x2)
-# coef(b_ols)
-# 
-# }
-# system.time(
-# test <- replicate(rep, model_data(n))
-# )
-# test <- t(test)
-# mean(test[,1])
-# mean(test[,2])
-# mean(test[,3])
-
-
+covb <- sigma2 * solve(crossprod(X, X))
+se_b <- sqrt(diag(covb))
+t_val <- mu_betas/se_b
+dimnames(t_val) <- list(c(), c("t_values"))
+t_val
 
 
 ```
-
+  
 ```{r, echo=FALSE, message=FALSE, results='asis', fig.height=3}
-
-# beta_0 <- mean(temp[,1])
-# beta_1 <- mean(temp[,2])
-# beta_2 <- mean(temp[,3])
 
 par(mfrow=c(1,3))
 hist(temp[,1])
 hist(temp[,2])
 hist(temp[,3])
 
-# beta_0
-# beta_1
-# beta_2
-
 ```
+
+
+
+
+
+
+
+
+
+
+
 
