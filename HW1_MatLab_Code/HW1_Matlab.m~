@@ -24,17 +24,11 @@ for i= 1:rep
 end
 
 mu_betas= mean(temp);
-mu_betas= mu_betas'
-
-ehat= y-X*mu_betas;
-
-sigma2= (ehat'*ehat)/(n-3);
-
-covb= sigma2.* inv(X'*X);
-
-se_betas= sqrt(diag(covb));
-
-t_val= mu_betas ./ se_betas
+ehat= y-X.*mu_betas;
+sigma2= (ehat'*ehat)./(n-3);
+covb= sigma2* inv(X'*X);
+seb= sqrt(diag(covb));
+t_val= mu_betas' ./ seb
 
 
 
