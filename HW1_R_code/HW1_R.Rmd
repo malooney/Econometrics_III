@@ -10,9 +10,10 @@ output: pdf_document
 system.time({
   
 n=20 # sample size
+k=3 # number of paramaters in model
 reps <- 1e2 # number of ols iterations
 i <- 1 # counter
-temp <- matrix(nrow = reps, ncol = 3) # matrix to stuff results into dim= "reps" X 3
+temp <- matrix(nrow = reps, ncol = k) # matrix to stuff results into dim= "reps" X 3
 
 for(i in 1:reps){
   
@@ -22,7 +23,7 @@ x2 <- rnorm(n=n, mean=1000, sd=10) # n-random normal draws for x2 data
 
 y <- 5+ 4* x1+ 0.7* x2 +e # construct model
 
-X <- matrix(c(rep(1, n), x1, x2), nrow=n, ncol=3) # gather X-data into single matrix
+X <- matrix(c(rep(1, n), x1, x2), nrow=n, ncol=k) # gather X-data into single matrix
 
 b_ols <- solve(crossprod(X, X)) %*% crossprod(X, y) # faster to use matrix algebra over lm function
 
@@ -45,7 +46,7 @@ mu_betas
 
 ehat <- y-(X %*% b_ols)
 
-sigma2 <- (t(ehat) %*% ehat) / (n-3)
+sigma2 <- (t(ehat) %*% ehat) / (n-k)
 sigma2 <- as.numeric(sigma2)
 
 covb <- sigma2 * solve(crossprod(X, X))
