@@ -21,7 +21,7 @@ e <- rnorm(n=n, mean=0, sd=5) # n-random normal draws for error term
 x1 <- rnorm(n=n, mean=100, sd=7) # n-random normal draws for x1 data
 x2 <- rnorm(n=n, mean=1000, sd=10) # n-random normal draws for x2 data
 
-y <- 5+ 4* x1+ 0.7* x2 +e # construct model
+y <- 10+ 1* x1+ 1* x2 +e # construct model
 
 X <- matrix(c(rep(1, n), x1, x2), nrow=n, ncol=k) # gather X-data into single matrix
 
@@ -55,6 +55,7 @@ t_val <- mu_betas/se_b
 dimnames(t_val) <- list(c(), c("t_values"))
 t_val
 
+e_test <- y-(X%*%mu_betas)
 
 ```
   
