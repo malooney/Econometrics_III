@@ -126,8 +126,7 @@ hw1.mle <- function( par0, y, x1, x2)
 #   temp.mle <- ucminf(par0, hw1.loglike, y=y, x1=x1, x2=x2)
   
    if(temp.mle$convergence!=0)
-     stop("Warning: Up-Up-Down-Down-Left-Right-Left-Right B, A, Start
-          DID NOT CONVERGE!!!")
+     stop("!!!DID NOT CONVERGE!!!")
   
   return(temp.mle)
 }
@@ -151,11 +150,11 @@ b_ols <- solve(crossprod(X, X)) %*% crossprod(X, y) # faster to use matrix algeb
 ##################################################################
 ### MLE estimation ###
 
-par0= c(b_ols[1], b_ols[2], b_ols[3], 0, 0)
+par0= c(b_ols[1], b_ols[2], b_ols[3], 0, 0) # obtain starting values from ols
 
 #hw1.loglike(params=par0, y=y, x1=x1, x2=x2)
 
-beta_mle <- hw1.mle(par0=par0, y=y, x1=x1, x2=x2)
+beta_mle <- hw1.mle(par0=par0, y=y, x1=x1, x2=x2) # run MLE precedure
 
 beta_mle_params <- matrix(beta_mle$par, nrow=5)
 dimnames(beta_mle_params) <- list(c(), c("betas_mle"))
