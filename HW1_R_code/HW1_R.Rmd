@@ -7,19 +7,24 @@ output: pdf_document
 
 ```{r, echo=FALSE, message=FALSE, results='asis', cache=F}
 
-system.time({
-  
+ library(readr)
+
+data <- read_csv("~/Google Drive/digitalLibrary/*Econometrics3/Econometrics3/HW1_MatLab_Code/data.csv", col_names = FALSE)
+
 n=20 # sample size
 k=3 # number of paramaters in model
 reps <- 1e2 # number of ols iterations
 i <- 1 # counter
-temp <- matrix(nrow = reps, ncol = k) # matrix to stuff results into dim= "reps" X 3
+temp <- matrix(nrow = reps, ncol = k+3) # matrix to stuff results into dim= "reps" X k+3
+x1 <- data$X2
+x2 <- data$X3
 
 for(i in 1:reps){
   
-e <- rnorm(n=n, mean=0, sd=5) # n-random normal draws for error term
-x1 <- rnorm(n=n, mean=100, sd=7) # n-random normal draws for x1 data
-x2 <- rnorm(n=n, mean=1000, sd=10) # n-random normal draws for x2 data
+#e <- rnorm(n=n, mean=0, sd=5) # n-random normal draws for error term
+#x1 <- rnorm(n=n, mean=100, sd=7) # n-random normal draws for x1 data
+#x2 <- rnorm(n=n, mean=1000, sd=10) # n-random normal draws for x2 data
+e= sqrt(exp(-2+ 0.25* x1)) *rnorm(n)
 
 y <- 10+ 1* x1+ 1* x2 +e # construct model
 
@@ -27,47 +32,144 @@ X <- matrix(c(rep(1, n), x1, x2), nrow=n, ncol=k) # gather X-data into single ma
 
 b_ols <- solve(crossprod(X, X)) %*% crossprod(X, y) # faster to use matrix algebra over lm function
 
+ehat <- y-(X %*% b_ols)
+sigma2 <- (t(ehat) %*% ehat) / (n-k)
+sigma2 <- as.numeric(sigma2)
+covb <- diag(sigma2 * solve(crossprod(X, X)))
+
 temp[i, 1] <- b_ols[1]
 temp[i, 2] <- b_ols[2]
 temp[i, 3] <- b_ols[3]
+temp[i, 4] <- covb[1]
+temp[i, 5] <- covb[2]
+temp[i, 6] <- covb[3]
 
 i <- i+1
 }
-})
   
-dimnames(temp) <- list(c(), c("beta_0", "beta_1", "beta_2"))
+dimnames(temp) <- list(c(), c("beta_0", "beta_1", "beta_2", "covb0", "covb1", "covb2"))
   
-mu_betas <- matrix(nrow=3, ncol=1)
-mu_betas[1,1] <- mean(temp[,1])
-mu_betas[2,1] <- mean(temp[,2])
-mu_betas[3,1] <- mean(temp[,3])
-dimnames(mu_betas) <- list(c(), c("betas"))
-mu_betas
+ols_params_mu <- matrix(nrow=3, ncol=2)
+ols_params_mu[1,1] <- mean(temp[,1])
+ols_params_mu[2,1] <- mean(temp[,2])
+ols_params_mu[3,1] <- mean(temp[,3])
+ols_params_mu[1,2] <- mean(temp[,1])/ sqrt(mean(temp[, 4]))
+ols_params_mu[2,2] <- mean(temp[,2])/ sqrt(mean(temp[, 5]))
+ols_params_mu[3,2] <- mean(temp[,3])/ sqrt(mean(temp[, 6]))
 
-ehat <- y-(X %*% b_ols)
+dimnames(ols_params_mu) <- list(c(), c("betas_ols", "t_values_ols"))
+ols_params_mu
 
-sigma2 <- (t(ehat) %*% ehat) / (n-k)
-sigma2 <- as.numeric(sigma2)
-
-covb <- sigma2 * solve(crossprod(X, X))
-se_b <- sqrt(diag(covb))
-t_val <- mu_betas/se_b
-dimnames(t_val) <- list(c(), c("t_values"))
-t_val
-
-e_test <- y-(X%*%mu_betas)
+# ehat <- y-(X %*% b_ols)
+# sigma2 <- (t(ehat) %*% ehat) / (n-k)
+# sigma2 <- as.numeric(sigma2)
+# covb <- sigma2 * solve(crossprod(X, X))
+# se_b <- sqrt(diag(covb))
+# t_val <- mu_betas/se_b
+# dimnames(t_val) <- list(c(), c("t_values_ols"))
+# t_val
 
 ```
   
 ```{r, echo=FALSE, message=FALSE, results='asis', fig.height=3}
 
-par(mfrow=c(1,3))
-hist(temp[,1])
-hist(temp[,2])
-hist(temp[,3])
+# par(mfrow=c(1,3))
+# hist(temp[,1])
+# hist(temp[,2])
+# hist(temp[,3])
 
 ```
+   
+```{r, echo=FALSE, message=FALSE, results='asis', fig.height=3}
 
+###################
+### MLE Section ###
+###################
+
+### housekeeping ###
+
+ library(readr)
+
+data <- read_csv("~/Google Drive/digitalLibrary/*Econometrics3/Econometrics3/HW1_MatLab_Code/data.csv", col_names = FALSE)
+
+n=20 # sample size
+k=3 # number of paramaters in model
+reps <- 1e2 # number of ols iterations
+i <- 1 # counter
+temp <- matrix(nrow = reps, ncol = k) # matrix to stuff results into dim= "reps" X 3
+x1 <- data$X2
+x2 <- data$X3
+
+### MLE functions ###
+
+hw1.loglike <- function(params, y, x1, x2)
+{
+  beta1 <- params[1]
+  beta2 <- params[2]
+  beta3 <- params[3]
+  beta4 <- params[4]
+  beta5 <- params[5]
+  
+  n <- length(x1)
+    
+    lnL= -0.5* n* log(2* pi)- 0.5* sum(beta4+ beta5* x1)- 0.5* sum( ( (y- (beta1+ beta2* x1+ beta3* x2))^2 )/ (exp(beta4+ beta5* x1) ) ) 
+  
+  return(lnL)
+}
+
+hw1.mle <- function( par0, y, x1, x2)
+{
+  
+   temp.mle <- optim(par0, hw1.loglike, y=y, x1=x1, x2=x2, method="Nelder-Mead", 
+                     control=list(fnscale= -1, maxit = 30000, reltol=sqrt(.Machine$double.eps)), hessian= T)
+  
+#   temp.mle <- ucminf(par0, hw1.loglike, y=y, x1=x1, x2=x2)
+  
+   if(temp.mle$convergence!=0)
+     stop("Warning: Up-Up-Down-Down-Left-Right-Left-Right B, A, Start
+          DID NOT CONVERGE!!!")
+  
+  return(temp.mle)
+}
+
+### get starting values for MLE; standard OLS estimation ###
+
+#for(i in 1:reps){
+  
+#e <- rnorm(n=n, mean=0, sd=5) # n-random normal draws for error term
+#x1 <- rnorm(n=n, mean=100, sd=7) # n-random normal draws for x1 data
+#x2 <- rnorm(n=n, mean=1000, sd=10) # n-random normal draws for x2 data
+
+e= sqrt(exp(-2+ 0.25* x1)) *rnorm(n)
+
+y <- 10+ 1* x1+ 1* x2 +e # construct model
+
+X <- matrix(c(rep(1, n), x1, x2), nrow=n, ncol=k) # gather X-data into single matrix
+
+b_ols <- solve(crossprod(X, X)) %*% crossprod(X, y) # faster to use matrix algebra over lm function
+
+##################################################################
+### MLE estimation ###
+
+par0= c(b_ols[1], b_ols[2], b_ols[3], 0, 0)
+
+#hw1.loglike(params=par0, y=y, x1=x1, x2=x2)
+
+beta_mle <- hw1.mle(par0=par0, y=y, x1=x1, x2=x2)
+
+beta_mle_params <- matrix(beta_mle$par, nrow=5)
+dimnames(beta_mle_params) <- list(c(), c("betas_mle"))
+beta_mle_params
+
+var_mle <- -diag(solve(beta_mle$hessian))
+
+#mle_se <- sqrt(var_mle)
+
+#mle_t_val <- beta_mle$par / mle_se
+#mle_t_val <- matrix(mle_t_val, nrow=5)
+#dimnames(mle_t_val) <- list(c(), c("t_values__mle"))
+#mle_t_val
+```
 
 
 

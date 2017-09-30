@@ -3,17 +3,22 @@
 tic
 
 i=1;
-n=1e5;
-rep=1e3;
+n=20;
+rep=1e2;
 temp= zeros([rep 3]);
+
+data= xlsread('data.xlsx');
+x1=data(:,2);
+x2=data(:,3);
 
 for i= 1:rep
     
-    x1= 100+ 7* randn(n, 1);
-    x2= 1000+ 10* randn(n, 1);
-    e= 0+ 5*randn(n, 1);
+    %x1= 100+ 7* randn(n, 1);
+    %x2= 1000+ 10* randn(n, 1);
+    %e= 0+ 5*randn(n, 1);
+    e= sqrt(exp(-2+ 0.25*x1)).* randn(n,1);
 
-    y= 5+ 4* x1+ 0.7* x2 +e;
+    y= 10+ 1* x1+ 1* x2 +e;
 
     X=[ones(n, 1) x1 x2];
 
