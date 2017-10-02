@@ -5,7 +5,11 @@ date: "9/11/2017"
 output: pdf_document
 ---
 
-```{r, echo=FALSE, message=FALSE, results='asis', cache=F}
+```{r straight OLS, echo=FALSE, message=FALSE, results='asis', cache=F}
+
+cat("\014")
+rm(list=ls())
+set.seed(12345)
 
  library(readr)
 
@@ -15,7 +19,7 @@ n=20 # sample size
 k=3 # number of paramaters in model
 reps <- 1e2 # number of ols iterations
 i <- 1 # counter
-temp <- matrix(nrow = reps, ncol = k+3) # matrix to stuff results into dim= "reps" X k+3
+temp <- matrix(nrow = reps, ncol = 8) # matrix to stuff results into dim= "reps" X k+3
 x1 <- data$X2
 x2 <- data$X3
 
@@ -36,6 +40,119 @@ ehat <- y-(X %*% b_ols)
 sigma2 <- (t(ehat) %*% ehat) / (n-k)
 sigma2 <- as.numeric(sigma2)
 covb <- diag(sigma2 * solve(crossprod(X, X)))
+
+bp_ols <- lm(y~x1+x2)
+bp_test <- bptest(bp_ols, studentize = F)
+gvHet_test <- gvlma(bp_ols)
+
+temp[i, 1] <- b_ols[1]
+temp[i, 2] <- b_ols[2]
+temp[i, 3] <- b_ols[3]
+temp[i, 4] <- covb[1]
+temp[i, 5] <- covb[2]
+temp[i, 6] <- covb[3]
+temp[i, 7] <- unlist(bp_test[1])
+temp[i, 8] <- gvHet_test$GlobalTest$DirectionalStat4$Value
+
+i <- i+1
+}
+  
+dimnames(temp) <- list(c(), c("beta_0", "beta_1", "beta_2", "covb0", "covb1", "covb2", "BP_testStat", "GV_HET_Test"))
+  
+ols_params_mu <- matrix(nrow=3, ncol=3)
+
+ols_params_mu[1,1] <- mean(temp[,1])
+ols_params_mu[2,1] <- mean(temp[,2])
+ols_params_mu[3,1] <- mean(temp[,3])
+
+ols_params_mu[1,2] <- sqrt(mean(temp[, 4]))
+ols_params_mu[2,2] <- sqrt(mean(temp[, 5]))
+ols_params_mu[3,2] <- sqrt(mean(temp[, 6]))
+
+ols_params_mu[1,3] <- mean(temp[,1])/ sqrt(mean(temp[, 4]))
+ols_params_mu[2,3] <- mean(temp[,2])/ sqrt(mean(temp[, 5]))
+ols_params_mu[3,3] <- mean(temp[,3])/ sqrt(mean(temp[, 6]))
+
+dimnames(ols_params_mu) <- list(c(), c("betas_ols", "se_ols", "t_values_ols"))
+ols_params_mu
+
+#ehat <- y-(X %*% b_ols)
+# sigma2 <- (t(ehat) %*% ehat) / (n-k)
+# sigma2 <- as.numeric(sigma2)
+# covb <- sigma2 * solve(crossprod(X, X))
+# se_b <- sqrt(diag(covb))
+# t_val <- mu_betas/se_b
+# dimnames(t_val) <- list(c(), c("t_values_ols"))
+# t_val
+
+```
+  
+```{r, echo=FALSE, message=FALSE, results='asis', fig.height=3}
+
+# par(mfrow=c(1,3))
+# hist(temp[,1])
+# hist(temp[,2])
+# hist(temp[,3])
+
+```
+  
+```{r OLS with GLS, echo=FALSE, message=FALSE, results='asis', fig.height=3}
+
+cat("\014")
+rm(list=ls())
+set.seed(12345)
+
+library(readr)
+
+data <- read_csv("~/Google Drive/digitalLibrary/*Econometrics3/Econometrics3/HW1_MatLab_Code/data.csv", col_names = FALSE)
+x1 <- data$X2
+x2 <- data$X3
+
+n=20 # sample size
+k=3 # number of paramaters in model
+reps <- 1e2 # number of ols iterations
+i <- 1 # counter
+temp <- matrix(nrow = reps, ncol = k+3) # matrix to stuff results into dim= "reps" X k+3
+
+for(i in 1:reps){
+  
+#e <- rnorm(n=n, mean=0, sd=5) # n-random normal draws for error term
+#x1 <- rnorm(n=n, mean=100, sd=7) # n-random normal draws for x1 data
+#x2 <- rnorm(n=n, mean=1000, sd=10) # n-random normal draws for x2 data
+e= sqrt(exp(-2+ 0.25* x1)) *rnorm(n)
+
+y <- matrix(10+ 1* x1+ 1* x2 +e) # construct model
+
+X <- matrix(c(rep(1, n), x1, x2), nrow=n, ncol=k) # gather X-data into single matrix
+
+b_ols <- solve( crossprod(X, X) ) %*% crossprod(X, y) # faster to use matrix algebra over lm function
+
+ehat <- y-(X %*% b_ols)
+sigma2 <- (t(ehat) %*% ehat) / (n-k)
+sigma2 <- as.numeric(sigma2)
+covb <- diag(sigma2 * solve(crossprod(X, X)))
+
+### GLS section ###
+
+ehat2 <- ehat^2
+w_gls <- solve(crossprod(X, X)) %*% crossprod(X, log(ehat2))
+w_gls_hat <- exp(w_gls[1]+ w_gls[2]* x1+ w_gls[3]* x2)
+w_gls_hat_sq <- diag(w_gls_hat)
+w_gls_hat_inv <- solve(w_gls_hat_sq)
+
+b_ols_fgls <- solve( t(X) %*% w_gls_hat_inv %*% X ) %*% ( t(X) %*% w_gls_hat_inv %*% y )
+#te <- lm(y~ x1+x2, weights=w_gls_hat^-1)
+te1 <- lm(y~ x1+x2)
+vcovHCCM3 <- diag(hccm(te1, type="hc3"))
+
+#vcov_ols_fgls <- sigma2*solve(t(X)%*% w_gls_hat_inv%*% X)
+# pg 270 greene, 7th Ed.
+vcov_ols_fgls <- sigma2 * (solve( crossprod(X, X) ) %*% ( t(X) %*% w_gls_hat_inv %*% X ) %*% solve(crossprod(X, X)) )
+
+vcov_ols_fgls_diag <- diag(vcov_ols_fgls)
+
+############ general testing section ###############
+
 
 temp[i, 1] <- b_ols[1]
 temp[i, 2] <- b_ols[2]
@@ -70,15 +187,6 @@ ols_params_mu
 # t_val
 
 ```
-  
-```{r, echo=FALSE, message=FALSE, results='asis', fig.height=3}
-
-# par(mfrow=c(1,3))
-# hist(temp[,1])
-# hist(temp[,2])
-# hist(temp[,3])
-
-```
    
 ```{r, echo=FALSE, message=FALSE, results='asis', fig.height=3}
 
@@ -87,6 +195,10 @@ ols_params_mu
 ###################
 
 ### housekeeping ###
+
+cat("\014")
+rm(list=ls())
+set.seed(12345)
 
  library(readr)
 
@@ -112,7 +224,7 @@ hw1.loglike <- function(params, y, x1, x2)
   
   n <- length(x1)
     
-    lnL= -0.5* n* log(2* pi)- 0.5* sum(beta4+ beta5* x1)- 0.5* sum( ( (y- (beta1+ beta2* x1+ beta3* x2))^2 )/ (exp(beta4+ beta5* x1) ) ) 
+    lnL= -0.5* n* log(2* pi)- 0.5* sum(beta4+ beta5* x1)- 0.5* sum( ( (y- (beta1+ beta2* x1+ beta3* x2))^2 )/ ( exp(beta4+ beta5* x1) ) ) 
   
   return(lnL)
 }
@@ -155,12 +267,13 @@ par0= c(b_ols[1], b_ols[2], b_ols[3], 0, 0) # obtain starting values from ols
 #hw1.loglike(params=par0, y=y, x1=x1, x2=x2)
 
 beta_mle <- hw1.mle(par0=par0, y=y, x1=x1, x2=x2) # run MLE precedure
+#beta_mle1 <- nlm(hw1.loglike, p=par0, y=y, x1=x1, x2=x2) # run MLE precedure
 
 beta_mle_params <- matrix(beta_mle$par, nrow=5)
 dimnames(beta_mle_params) <- list(c(), c("betas_mle"))
 beta_mle_params
 
-var_mle <- -diag(solve(beta_mle$hessian))
+var_mle <- (-1)* diag(solve(beta_mle$hessian))
 
 #mle_se <- sqrt(var_mle)
 
@@ -171,9 +284,9 @@ var_mle <- -diag(solve(beta_mle$hessian))
 ```
 
 
-
-
-
+\begin{equation}
+\ln L =  - 0.5n\log (2\pi ) - 0.5\sum\limits_{}^{} {({\sigma ^2}) - 0.5\sum\limits_{}^{} {\left[ {\frac{{{{(y - X'\beta )}^2}}}{{{\sigma ^2}}}} \right]} }
+\end{equation}
 
 
 
