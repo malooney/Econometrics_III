@@ -126,7 +126,7 @@ n=20 # sample size
 k=3 # number of paramaters in model
 reps <- 1e2 # number of ols iterations
 i <- 1 # counter
-temp <- matrix(nrow = reps, ncol = 30) # matrix to stuff results into dim= "reps" X k+3
+temp <- matrix(nrow = reps, ncol = 32) # matrix to stuff results into dim= "reps" X k+3
 
 for(i in 1:reps){
   
@@ -149,8 +149,12 @@ covb <- diag(sigma2 * solve(crossprod(X, X)))
 ### GLS section ###
 
 ehat2 <- ehat^2
-w_gls <- solve( crossprod(X, X) ) %*% crossprod(X, log(ehat2))
-w_gls_hat <- exp(w_gls[1]+ w_gls[2]* x1+ w_gls[3]* x2)
+# w_gls <- solve( crossprod(X[,-3], X[,-3]) ) %*% crossprod(X[,-3], log(ehat2))
+# w_gls_hat <- exp(w_gls[1]+ w_gls[2]* x1+ w_gls[3]* x2)
+# w_gls_hat_sq <- diag(w_gls_hat)
+# w_gls_hat_inv <- solve(w_gls_hat_sq)
+w_gls <- solve( crossprod(X[,-3], X[,-3]) ) %*% crossprod(X[,-3], log(ehat2))
+w_gls_hat <- exp(w_gls[1]+ w_gls[2]* x1)
 w_gls_hat_sq <- diag(w_gls_hat)
 w_gls_hat_inv <- solve(w_gls_hat_sq)
 
@@ -182,26 +186,31 @@ temp[i, 12] <- mean(b_ols[3]/sqrt(covb[3]))
 temp[i, 13] <- b_ols_fgls[1]
 temp[i, 14] <- b_ols_fgls[2]
 temp[i, 15] <- b_ols_fgls[3]
-temp[i, 16] <- vcov_ols_fgls_diag[1]
-temp[i, 17] <- vcov_ols_fgls_diag[2]
-temp[i, 18] <- vcov_ols_fgls_diag[3]
-temp[i, 19] <- sqrt(vcov_ols_fgls_diag[1])
-temp[i, 20] <- sqrt(vcov_ols_fgls_diag[2])
-temp[i, 21] <- sqrt(vcov_ols_fgls_diag[3])
-temp[i, 22] <- (b_ols_fgls[1])/sqrt(vcov_ols_fgls_diag[1])
-temp[i, 23] <- (b_ols_fgls[2])/sqrt(vcov_ols_fgls_diag[2])
-temp[i, 24] <- (b_ols_fgls[3])/sqrt(vcov_ols_fgls_diag[3])
-temp[i, 25] <- vcovHCCM0[1]
-temp[i, 26] <- vcovHCCM0[2]
-temp[i, 27] <- vcovHCCM0[3]
-temp[i, 28] <- vcovHCCM3[1]
-temp[i, 29] <- vcovHCCM3[2]
-temp[i, 30] <- vcovHCCM3[3]
+
+temp[i, 16] <- w_gls[1]
+temp[i, 17] <- w_gls[2]
+
+temp[i, 18] <- vcov_ols_fgls_diag[1]
+temp[i, 19] <- vcov_ols_fgls_diag[2]
+temp[i, 20] <- vcov_ols_fgls_diag[3]
+
+temp[i, 21] <- sqrt(vcov_ols_fgls_diag[1])
+temp[i, 22] <- sqrt(vcov_ols_fgls_diag[2])
+temp[i, 23] <- sqrt(vcov_ols_fgls_diag[3])
+temp[i, 24] <- (b_ols_fgls[1])/sqrt(vcov_ols_fgls_diag[1])
+temp[i, 25] <- (b_ols_fgls[2])/sqrt(vcov_ols_fgls_diag[2])
+temp[i, 26] <- (b_ols_fgls[3])/sqrt(vcov_ols_fgls_diag[3])
+temp[i, 27] <- vcovHCCM0[1]
+temp[i, 28] <- vcovHCCM0[2]
+temp[i, 29] <- vcovHCCM0[3]
+temp[i, 30] <- vcovHCCM3[1]
+temp[i, 31] <- vcovHCCM3[2]
+temp[i, 32] <- vcovHCCM3[3]
 
 i <- i+1
 }
   
-dimnames(temp) <- list(c(), c("beta_0_ols", "beta_1_ols", "beta_2_ols", "var_b0_ols", "var_b1_ols", "var_b2_ols", "se_b0_ols", "se_b1_ols", "se_b2_ols", "t_val_b0_ols", "t_val_b1_ols", "t_val_b2_ols", "beta_0_fgls", "beta_1_fgls", "beta_2_fgls", "var_b0_fgls", "var_b1_fgls", "var_b2_fgls", "se_b0_fgls", "se_b1_fgls", "se_b2_fgls", "t_val_b0_fgls", "t_val_b1_fgls", "t_val_b2_fgls", "var_b0_HCCM_0", "var_b1_HCCM_0", "var_b2_HCCM_0", "var_b0_HCCM_3", "var_b1_HCCM_3", "var_b2_HCCM_3"))
+dimnames(temp) <- list(c(), c("beta_0_ols", "beta_1_ols", "beta_2_ols", "var_b0_ols", "var_b1_ols", "var_b2_ols", "se_b0_ols", "se_b1_ols", "se_b2_ols", "t_val_b0_ols", "t_val_b1_ols", "t_val_b2_ols", "beta_0_fgls", "beta_1_fgls", "beta_2_fgls", "alpha_0_fgls", "alpha_1_fgls", "var_b0_fgls", "var_b1_fgls", "var_b2_fgls", "se_b0_fgls", "se_b1_fgls", "se_b2_fgls", "t_val_b0_fgls", "t_val_b1_fgls", "t_val_b2_fgls", "var_b0_HCCM_0", "var_b1_HCCM_0", "var_b2_HCCM_0", "var_b0_HCCM_3", "var_b1_HCCM_3", "var_b2_HCCM_3"))
   
 # ols_params_mu <- matrix(nrow=3, ncol=2)
 # ols_params_mu[1,1] <- mean(temp[,1])
@@ -358,9 +367,99 @@ where,
 ${\sigma ^2} \simeq \exp ({\alpha _0} + {\alpha _1}{x_1})$
 
 
-```{r}
- arima.sim(n = 20, list(ar = c(0.8)), sd = sqrt(6.4))
+```{r HW1 Prob. 2, echo=FALSE, message=FALSE, results='asis', fig.height=3}
 
+###################
+### OLS ###
+###################
+
+### housekeeping ###
+
+cat("\014")
+rm(list=ls())
+#set.seed(12345)
+
+ library(readr)
+
+# C.O. funcition requires Y, X (with constant), OLS b.
+c.o.proc <- function(Y,X,b_0,tol){
+  T <- length(y)
+  e <- y - (X%*%b_0) #OLS residuals
+  rss <- sum(e^2); 
+  rss_1 <- rss; 
+  d_rss = rss
+  e2 <- e[-1]; 
+  e3 <- e[-T]
+  ols_e0 <- lm(e2~e3-1)
+  rho <- ols_e0$coeff[1] #initial value for rho
+  i<-1
+  while (d_rss > tol) {
+    rss <- rss_1 # RSS at iter (i-1)
+    YY <- y[2:T] - rho * y[1:(T-1)] # pseudo-diff Y
+    XX <- X[2:T, ] - rho * X[1:(T-1), ] # pseudo-diff X
+    ols_yx <- lm(YY~XX-1) # adjust if constant
+    b <- ols_yx$coef # updated b at iter i
+    # b[1] <- b[1]/(1-rho) #If constant not pseudo-diff
+    e1 <- y - X%*%b # update residuals
+    e2 <- e1[-1]
+    e3 <- e1[-T]
+    ols_e1 <- lm(e2~e3-1)
+    rho <- ols_e1$coeff[1] # rho i
+    rss_1 <- sum(e1^2) # RSS i
+    d_rss <- abs(rss_1-rss) # diff in RSS
+    i <- i+1
+  }
+  result <-list()
+  result$Cochrane_Orc.Proc <- summary(ols_yx)
+  result$rho.regression <- summary(ols_e1)
+  # result$Corrected.b_1 <- b[1]
+  result$Iterations <-i-1
+  return(result)
+}
+
+################################################################################
+
+data <- read_csv("~/Google Drive/digitalLibrary/*Econometrics3/Econometrics3/HW1_MatLab_Code/data.csv", col_names = FALSE)
+
+n=20 # sample size
+k=3 # number of paramaters in model
+reps <- 1e2 # number of ols iterations
+i <- 1 # counter
+temp <- matrix(nrow = reps, ncol = 5) # matrix to stuff results into dim= "reps" X 3
+x1 <- data$X2
+x2 <- data$X3
+
+for(i in 1:reps){
+et <- arima.sim(n = 20, list(ar = c(-0.8)), sd = sqrt(6.4))
+et <- matrix(et)
+#et= sqrt(exp(-2+ 0.25* x1)) *rnorm(n)
+
+y <- 10+ 1* x1+ 1* x2+ et # construct model
+
+X <- matrix(c(rep(1, n), x1, x2), nrow=n, ncol=k) # gather X-data into single matrix
+
+b_ols <- solve(crossprod(X, X)) %*% crossprod(X, y) # faster to use matrix algebra over lm function
+
+ehat <- y-(X %*% b_ols)
+sigma2 <- (t(ehat) %*% ehat) / (n-k)
+sigma2 <- as.numeric(sigma2)
+covb <- diag(sigma2 * solve(crossprod(X, X)))
+
+DW_ols <- lm(y~x1+x2)
+DW_test <- dwtest(DW_ols)
+DW_test
+
+ehat_lag <- ehat[-1]
+ehat_lag1 <- ehat[-20]
+lm(ehat_lag~ ehat_lag1-1)
+
+
+rho_est <- c.o.proc(Y=y, X=X, b_0=b_ols, tol = 1e-8)
+temp[i,1] <- -rho_est$rho.regression$coefficients[1]
+
+i <- i+1
+}
+ mean(temp[,1])
 ```
 
 
