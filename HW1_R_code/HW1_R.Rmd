@@ -430,6 +430,7 @@ x1 <- data$X2
 x2 <- data$X3
 
 for(i in 1:reps){
+  
 et <- arima.sim(n = 20, list(ar = c(-0.8)), sd = sqrt(6.4))
 et <- matrix(et)
 #et= sqrt(exp(-2+ 0.25* x1)) *rnorm(n)
@@ -456,10 +457,12 @@ lm(ehat_lag~ ehat_lag1-1)
 
 rho_est <- c.o.proc(Y=y, X=X, b_0=b_ols, tol = 1e-8)
 temp[i,1] <- -rho_est$rho.regression$coefficients[1]
+temp[i,2] <- sigma2
 
 i <- i+1
 }
  mean(temp[,1])
+ mean(temp[,2])
 ```
 
 
