@@ -163,6 +163,8 @@ where $u = (e_1^2,e_2^2,...,e_n^2)$, $i$ is a $nx1$ vector of ones, and
 
 $$v = {1 \over n}{\sum\limits_{i = 1}^n {\left( {e_i^2 - {{e'e} \over n}} \right)} ^2}$$
   
+The result from any one of the 100 experiments may or may not indicate heteroskedasticity, however, when we average over the range of the 100 experiments we obtain a test statistic which would suggest, overall we have a heteroskedasticity problem.   
+  
 **This is a modified version of the Breusch-Pagan test, which is less sensitive to the assumption of normality than the original test (Greene 2012, 7th Ed.; p. 276).**
   
   
@@ -293,23 +295,35 @@ dimnames(temp) <- list(c(), c("beta_0_ols", "beta_1_ols", "beta_2_ols", "var_b0_
   
 \newpage  
   
-# FGLS  
+## (c)  
   
-Estimate the model using FGLS techniques  Assume multiplicative hetero...  
+Assuming multiplicative heteroskedasticity, estimate the parameters using GLS and provide their covariance matrix.
   
-
+Table 2 (below) shows the summary of results obtained using Feasible generalized least squares (FGLS) to obtain an estimate of the variance-covariance structure. Once we have this structure ($\hat \Omega^{-1}$) in hand we can proceed with estimation of the Beta's and the correct variance-covariance.  
+  
+When comparing the FGLS results with OLS we notice the average of the paramater estimates are similar enough to be considered the same, as we expect. However, we observe the variance-covariance of the FGLS is much smaller, indicating a much better job at recovering the nature of the error structure and addressing the heteroskedasticity problem embedded in the data. Since we have generated the data with known structure and paramaters we can verify the accuracy of our techniques ability to uncover the true paramaters. The FGLS technique does an excellent job at recovering both the beta's of our data and the alpha paramaters of our error structure. Using the FGLS technique we also notice all of our paramater estimates are significant at the 95% level, a change from the OLS procdure where only two of the three paramaters were significant.  
+  
+To allow us to understand the distribution of the FGLS paramater estimates over the range of the 100 experiments, I provide density plot's (below).  
+  
 ```{r, echo=FALSE, message=FALSE, results='asis', fig.height=3, results='asis'}
 
-stargazer(temp, header=F, type="latex", summary = T, font.size = "small", notes= c("good 1 = meats", "good 2 = dairy", "good 3 = beans"), notes.align= "l", flip = F, float = T, float.env = "table", title="Summary Statistics", median = F)
-
- # par(mfrow=c(1,3))
- # hist(temp[,1])
- # hist(temp[,2])
- # hist(temp[,3])
+stargazer(temp, header=F, type="latex", summary = T, font.size = "small", notes= c(), notes.align= "l", flip = F, float = T, float.env = "table", title="Summary Statistics: Problem 1, part (c)", median = F)
 
 ```
   
-```{r MLE section, echo=FALSE, message=FALSE, results='asis', fig.height=3}
+```{r, echo=FALSE, message=FALSE, results='asis', fig.height=3, results='asis'}
+
+par(mfrow=c(1,3))
+plot(density(temp[,13]), main= expression(paste("FGLS-", beta[0], sep="")))
+plot(density(temp[,14]), main= expression(paste("FGLS-", beta[1], sep="")))
+plot(density(temp[,15]), main= expression(paste("FGLS-", beta[2], sep="")))
+par(mfrow=c(1,2))
+plot(density(temp[,16]), main= expression(paste("FGLS-", alpha[0], sep="")))
+plot(density(temp[,17]), main= expression(paste("FGLS-", alpha[1], sep="")))
+
+```
+  
+```{r MLE section, echo=FALSE, message=FALSE, results='asis', fig.height=3, warning=FALSE}
 
 ###################
 ### MLE Section ###
@@ -329,7 +343,7 @@ n=20 # sample size
 k=3 # number of paramaters in model
 reps <- 1e2 # number of ols iterations
 i <- 1 # counter
-temp <- matrix(nrow = reps, ncol = 10) # matrix to stuff results into dim= "reps" X 3
+temp <- matrix(nrow = reps, ncol = 20) # matrix to stuff results into dim= "reps" X 3
 x1 <- data$X2
 x2 <- data$X3
 
@@ -354,7 +368,7 @@ hw1.mle <- function( par0, y, x1, x2)
 {
   
    temp.mle <- optim(par0, hw1.loglike, y=y, x1=x1, x2=x2, method="Nelder-Mead", 
-                     control=list(fnscale= -1, maxit = 30000, reltol=sqrt(.Machine$double.eps)), hessian= T)
+                     control=list(fnscale= -1, maxit = 30000, reltol=sqrt(.Machine$double.eps)^2), hessian= T)
   
 #   temp.mle <- ucminf(par0, hw1.loglike, y=y, x1=x1, x2=x2)
   
@@ -391,7 +405,7 @@ beta_mle <- hw1.mle(par0=par0, y=y, x1=x1, x2=x2) # run MLE precedure
 #beta_mle1 <- nlm(hw1.loglike, p=par0, y=y, x1=x1, x2=x2) # run MLE precedure
 
 beta_mle_params <- matrix(beta_mle$par, nrow=5)
-var_mle <- (-1)* diag(solve(beta_mle$hessian))
+var_mle <- -(1)* diag(solve(beta_mle$hessian))
 
 dimnames(beta_mle_params) <- list(c(), c("betas_mle"))
 temp[i, 1] <- beta_mle_params[1]
@@ -405,6 +419,18 @@ temp[i, 8] <- var_mle[3]
 temp[i, 9] <- var_mle[4]
 temp[i, 10] <- var_mle[5]
 
+temp[i, 11] <- sqrt(var_mle[1])
+temp[i, 12] <- sqrt(var_mle[2])
+temp[i, 13] <- sqrt(var_mle[3])
+temp[i, 14] <- sqrt(var_mle[4])
+temp[i, 15] <- sqrt(var_mle[5])
+
+temp[i, 16] <- mean(beta_mle_params[1]/sqrt(var_mle[1]))
+temp[i, 17] <- mean(beta_mle_params[2]/sqrt(var_mle[2]))
+temp[i, 18] <- mean(beta_mle_params[3]/sqrt(var_mle[3]))
+temp[i, 19] <- mean(beta_mle_params[4]/sqrt(var_mle[4]))
+temp[i, 20] <- mean(beta_mle_params[5]/sqrt(var_mle[5]))
+
 #mle_se <- sqrt(var_mle)
 
 #mle_t_val <- beta_mle$par / mle_se
@@ -414,13 +440,15 @@ temp[i, 10] <- var_mle[5]
 i <- i+1
 }
 
-dimnames(temp) <- list(c(), c("beta_0_mle", "beta_1_mle", "beta_2_mle", "alpha_0_mle", "alpha_1_mle", "var_b0_mle", "var_b1_mle", "var_b2_mle", "var_alpha_0_mle", "var_alpha_1_mle"))
+dimnames(temp) <- list(c(), c("beta_0_mle", "beta_1_mle", "beta_2_mle", "alpha_0_mle", "alpha_1_mle", "var_b0_mle", "var_b1_mle", "var_b2_mle", "var_alpha_0_mle", "var_alpha_1_mle", "se_b0_mle", "se_b1_mle", "se_b2_mle", "se_alpha_0_mle", "se_alpha_1_mle", "t_val_b0_mle", "t_val_b1_mle", "t_val_b2_mle", "t_val_alpha_0_mle", "t_val_alpha_1_mle"))
+
 ```
   
 \newpage  
   
-# MLE
-
+## (d)  
+  
+Write a Matlab code to estimate the parameters using maximum likelihood method and provide their covariance matrix.   
 \begin{equation}
 \ln L =  - 0.5n\log (2\pi ) - 0.5\sum\limits_{}^{} {({\sigma ^2}) - 0.5\sum\limits_{}^{} {\left[ {\frac{{{{(y - X'\beta )}^2}}}{{{\sigma ^2}}}} \right]} }
 \end{equation}
@@ -429,9 +457,11 @@ where,
 
 ${\sigma ^2} \simeq \exp ({\alpha _0} + {\alpha _1}{x_1})$
   
+Table 3 (below) gives the summary statistics for the Maximum Likelihood Estimation method (MLE). Again we notice the MLE does a good job at uncovering the true paramaters of our model. The MLE has the added benefit of obtaining all paramater estimates at one time, assuming the MLE assumptions are met.
+  
 ```{r, echo=FALSE, message=FALSE, results='asis', fig.height=3, results='asis'}
 
-stargazer(temp, header=F, type="latex", summary = T, font.size = "small", notes= c("good 1 = meats", "good 2 = dairy", "good 3 = beans"), notes.align= "l", flip = F, float = T, float.env = "table", title="Summary Statistics", median = F)
+stargazer(temp, header=F, type="latex", summary = T, font.size = "small", notes= c(), notes.align= "l", flip = F, float = T, float.env = "table", title="Summary Statistics: Problem 1, part (d)", median = F)
 
 ```
   
