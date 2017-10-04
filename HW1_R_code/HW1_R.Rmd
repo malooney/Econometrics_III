@@ -167,7 +167,7 @@ vcov_ols_fgls <- sigma2 * (solve( crossprod(X, X) ) %*% ( t(X) %*% w_gls_hat_inv
 
 vcov_ols_fgls_diag <- diag(vcov_ols_fgls)
 
-te1 <- lm(y~ x1+x2)
+te1 <- lm(y~ x1+ x2)
 vcovHCCM0 <- diag(hccm(te1, type="hc0"))
 vcovHCCM3 <- diag(hccm(te1, type="hc3"))
 
@@ -272,7 +272,7 @@ n=20 # sample size
 k=3 # number of paramaters in model
 reps <- 1e2 # number of ols iterations
 i <- 1 # counter
-temp <- matrix(nrow = reps, ncol = 5) # matrix to stuff results into dim= "reps" X 3
+temp <- matrix(nrow = reps, ncol = 10) # matrix to stuff results into dim= "reps" X 3
 x1 <- data$X2
 x2 <- data$X3
 
@@ -337,12 +337,16 @@ beta_mle_params <- matrix(beta_mle$par, nrow=5)
 var_mle <- (-1)* diag(solve(beta_mle$hessian))
 
 dimnames(beta_mle_params) <- list(c(), c("betas_mle"))
-temp[i,1] <- beta_mle_params[1]
-temp[i,2] <- beta_mle_params[2]
-temp[i,3] <- beta_mle_params[3] 
-temp[i,4] <- beta_mle_params[4] 
-temp[i,5] <- beta_mle_params[5] 
-
+temp[i, 1] <- beta_mle_params[1]
+temp[i, 2] <- beta_mle_params[2]
+temp[i, 3] <- beta_mle_params[3] 
+temp[i, 4] <- beta_mle_params[4] 
+temp[i, 5] <- beta_mle_params[5] 
+temp[i, 6] <- var_mle[1]
+temp[i, 7] <- var_mle[2]
+temp[i, 8] <- var_mle[3]
+temp[i, 9] <- var_mle[4]
+temp[i, 10] <- var_mle[5]
 
 #mle_se <- sqrt(var_mle)
 
@@ -352,6 +356,8 @@ temp[i,5] <- beta_mle_params[5]
 #mle_t_val
 i <- i+1
 }
+
+dimnames(temp) <- list(c(), c("beta_0_mle", "beta_1_mle", "beta_2_mle", "alpha_0_mle", "alpha_1_mle", "var_b0_mle", "var_b1_mle", "var_b2_mle", "var_alpha_0_mle", "var_alpha_1_mle"))
 ```
   
 \newpage  
@@ -365,8 +371,13 @@ i <- i+1
 where,  
 
 ${\sigma ^2} \simeq \exp ({\alpha _0} + {\alpha _1}{x_1})$
+  
+```{r, echo=FALSE, message=FALSE, results='asis', fig.height=3, results='asis'}
 
+stargazer(temp, header=F, type="latex", summary = T, font.size = "small", notes= c("good 1 = meats", "good 2 = dairy", "good 3 = beans"), notes.align= "l", flip = F, float = T, float.env = "table", title="Summary Statistics", median = F)
 
+```
+  
 ```{r HW1 Prob. 2, echo=FALSE, message=FALSE, results='asis', fig.height=3}
 
 ###################
@@ -381,6 +392,7 @@ set.seed(12345)
 
  library(readr)
 library(lmtest)
+library(car)
 
 # Cochrane–Orcutt procedure
 # C.O. funcition requires Y, X (with constant), OLS b.
@@ -434,7 +446,7 @@ n=20 # sample size
 k=3 # number of paramaters in model
 reps <- 1e2 # number of ols iterations
 i <- 1 # counter
-temp <- matrix(nrow = reps, ncol = 13) # matrix to stuff results into dim= "reps" X 3
+temp <- matrix(nrow = reps, ncol = 33) # matrix to stuff results into dim= "reps" X 3
 x1 <- data$X2
 x2 <- data$X3
 
@@ -479,6 +491,10 @@ vcov_ols_fgls <- sigma2 * (solve( crossprod(X, X) ) %*% ( t(X) %*% omega_hat_inv
 
 vcov_ols_fgls_diag <- diag(vcov_ols_fgls)
 
+te1 <- lm(y~ x1+ x2)
+vcovHCCM0 <- diag(hccm(te1, type="hc0"))
+vcovHCCM3 <- diag(hccm(te1, type="hc3"))
+
 temp[i, 1] <- b_ols[1]
 temp[i, 2] <- b_ols[2]
 temp[i, 3] <- b_ols[3]
@@ -492,25 +508,43 @@ temp[i, 10] <- mean(b_ols[1]/sqrt(covb[1]))
 temp[i, 11] <- mean(b_ols[2]/sqrt(covb[2]))
 temp[i, 12] <- mean(b_ols[3]/sqrt(covb[3]))
 temp[i, 13] <- DW_test$statistic
+temp[i, 14] <- rho_hat_fgls
+temp[i, 15] <- sigma2_hat_fgls
+temp[i, 16] <- b_ols_fgls[1]
+temp[i, 17] <- b_ols_fgls[2]
+temp[i, 18] <- b_ols_fgls[3]
 
+temp[i, 19] <- vcov_ols_fgls_diag[1]
+temp[i, 20] <- vcov_ols_fgls_diag[2]
+temp[i, 21] <- vcov_ols_fgls_diag[3]
 
-# temp[i,1] <- rho_hat_fgls
-# temp[i,2] <- sigma2_hat_fgls
-# temp[i,3] <- b_ols_fgls[1]
-# temp[i,4] <- b_ols_fgls[2]
-# temp[i,5] <- b_ols_fgls[3]
+temp[i, 22] <- sqrt(vcov_ols_fgls_diag[1])
+temp[i, 23] <- sqrt(vcov_ols_fgls_diag[2])
+temp[i, 24] <- sqrt(vcov_ols_fgls_diag[3])
+temp[i, 25] <- (b_ols_fgls[1])/sqrt(vcov_ols_fgls_diag[1])
+temp[i, 26] <- (b_ols_fgls[2])/sqrt(vcov_ols_fgls_diag[2])
+temp[i, 27] <- (b_ols_fgls[3])/sqrt(vcov_ols_fgls_diag[3])
+
+temp[i, 28] <- vcovHCCM0[1]
+temp[i, 29] <- vcovHCCM0[2]
+temp[i, 30] <- vcovHCCM0[3]
+temp[i, 31] <- vcovHCCM3[1]
+temp[i, 32] <- vcovHCCM3[2]
+temp[i, 33] <- vcovHCCM3[3]
 
 
 i <- i+1
 }
 
-mean(temp[,1])
-mean(temp[,2])
-mean(temp[,3])
-mean(temp[,4])
-mean(temp[,5])
+dimnames(temp) <- list(c(), c("beta_0_ols", "beta_1_ols", "beta_2_ols", "var_b0_ols", "var_b1_ols", "var_b2_ols", "se_b0_ols", "se_b1_ols", "se_b2_ols", "t_val_b0_ols", "t_val_b1_ols", "t_val_b2_ols", "DW_Test", "rho_fgls", "sigma2_fgls", "beta_0_fgls", "beta_1_fgls", "beta_2_fgls", "var_b0_fgls", "var_b1_fgls", "var_b2_fgls", "se_b0_fgls", "se_b1_fgls", "se_b2_fgls", "t_val_b0_fgls", "t_val_b1_fgls", "t_val_b2_fgls", "var_b0_HCCM_0", "var_b1_HCCM_0", "var_b2_HCCM_0", "var_b0_HCCM_3", "var_b1_HCCM_3", "var_b2_HCCM_3"))
+
    
 ```
+  
+```{r, echo=FALSE, message=FALSE, results='asis', fig.height=3, results='asis'}
 
+stargazer(temp, header=F, type="latex", summary = T, font.size = "small", notes= c("good 1 = meats", "good 2 = dairy", "good 3 = beans"), notes.align= "l", flip = F, float = T, float.env = "table", title="Summary Statistics", median = F)
+
+```
 
 
