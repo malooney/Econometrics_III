@@ -115,7 +115,7 @@ The design matrix $X$ is given in a csv file.
 The following questions are based on Monte Carlo experimental data. Generate 100 samples of $y$, each of size 20, using the model given in equation 1 (above).
 
 
-## (a)  
+## (1.a)  
   
 Estiamte the parameters using the least squares principle and provide their covariance matrix. Compare your results with the true parameters. What can you conclude?  
   
@@ -141,7 +141,7 @@ plot(density(temp[,3]), main= expression(paste("ols-", beta[2], sep="")))
 
 ```
   
-## (b)  
+## (1.b)  
   
 Test for the presence of heteroskedasticity? What do you conclude?  
   
@@ -156,9 +156,12 @@ ${H_0}:\alpha  = 0$
   
 $\sigma _i^2$ is the error variance for the ith observation and $\alpha_0$ and $\alpha$ are regression coefficients.  
   
-The test statistic for the Breusch-Pagan test is
-
-$$bp = {1 \over v}(u - \bar ui)'Z{(Z'Z)^{ - 1}}Z'(u - \bar ui)$$
+The test statistic for the Breusch-Pagan test is:  
+  
+\begin{equation}
+bp = {1 \over v}(u - \bar ui)'Z{(Z'Z)^{ - 1}}Z'(u - \bar ui)
+\end{equation}
+  
 where $u = (e_1^2,e_2^2,...,e_n^2)$, $i$ is a $nx1$ vector of ones, and
 
 $$v = {1 \over n}{\sum\limits_{i = 1}^n {\left( {e_i^2 - {{e'e} \over n}} \right)} ^2}$$
@@ -295,7 +298,7 @@ dimnames(temp) <- list(c(), c("beta_0_ols", "beta_1_ols", "beta_2_ols", "var_b0_
   
 \newpage  
   
-## (c)  
+## (1.c)  
   
 Assuming multiplicative heteroskedasticity, estimate the parameters using GLS and provide their covariance matrix.
   
@@ -444,9 +447,7 @@ dimnames(temp) <- list(c(), c("beta_0_mle", "beta_1_mle", "beta_2_mle", "alpha_0
 
 ```
   
-\newpage  
-  
-## (d)  
+## (1.d)  
   
 Write a Matlab code to estimate the parameters using maximum likelihood method and provide their covariance matrix.   
 \begin{equation}
@@ -462,7 +463,6 @@ Table 3 (below) gives the summary statistics for the Maximum Likelihood Estimati
 When we compare the results obtained using the MLE procedure we notice all paramater estimates are similar, however, when we view the variance-covariance matrix we see that the FGLS seems to do a better job over the MLE procedure. This may be due to the optimization routine used for the MLE or the convergence tolerence, or both. More expermineting with the optimization variables could yield better results. At any rate the MLE estimation stratagy does a better job that OLS and just about as good a job as FGLS, in the current context.  
   
 To help us better understand the distribution of the MLE paramater estimates over the range of the 100 experiments, I provide density plot's (below).  
-  
   
 ```{r, echo=FALSE, message=FALSE, results='asis', fig.height=3, results='asis'}
 
@@ -482,7 +482,7 @@ plot(density(temp[,5]), main= expression(paste("MLE-", alpha[1], sep="")))
 
 ```
   
-```{r HW1 Problem 2 part a, echo=FALSE, message=FALSE, results='asis', fig.height=3}
+```{r HW1 Problem 2 part a, echo=FALSE, message=FALSE, results='asis', fig.height=3, warning=FALSE}
 
 ###################
 ### OLS ###
@@ -550,7 +550,7 @@ n=20 # sample size
 k=3 # number of paramaters in model
 reps <- 1e2 # number of ols iterations
 i <- 1 # counter
-temp <- matrix(nrow = reps, ncol = 33) # matrix to stuff results into dim= "reps" X 3
+temp <- matrix(nrow = reps, ncol = 34) # matrix to stuff results into dim= "reps" X 3
 x1 <- data$X2
 x2 <- data$X3
 
@@ -573,6 +573,7 @@ covb <- diag(sigma2 * solve(crossprod(X, X)))
 
 DW_ols <- lm(y~x1+x2)
 DW_test <- dwtest(DW_ols)
+bp_test <- bptest(DW_ols)
 #DW_test
 
 # ehat_lag <- ehat[-1]
@@ -580,7 +581,7 @@ DW_test <- dwtest(DW_ols)
 # lm(ehat_lag~ ehat_lag1-1)
 
 # using Cochrane–Orcutt procedure
-rho_est <- c.o.proc(Y=y, X=X, b_0=b_ols, tol = 1e-8)
+rho_est <- c.o.proc(Y=y, X=X, b_0=b_ols, tol = 1e-12)
 
 rho_hat_fgls <- -rho_est$rho.regression$coefficients[1]
 sigma2_hat_fgls <- rho_est$Cochrane_Orc.Proc$sigma^2
@@ -611,44 +612,114 @@ temp[i, 9] <- sqrt(covb[3])
 temp[i, 10] <- mean(b_ols[1]/sqrt(covb[1]))
 temp[i, 11] <- mean(b_ols[2]/sqrt(covb[2]))
 temp[i, 12] <- mean(b_ols[3]/sqrt(covb[3]))
+
 temp[i, 13] <- DW_test$statistic
-temp[i, 14] <- rho_hat_fgls
-temp[i, 15] <- sigma2_hat_fgls
-temp[i, 16] <- b_ols_fgls[1]
-temp[i, 17] <- b_ols_fgls[2]
-temp[i, 18] <- b_ols_fgls[3]
+temp[i, 14] <- bp_test$statistic
 
-temp[i, 19] <- vcov_ols_fgls_diag[1]
-temp[i, 20] <- vcov_ols_fgls_diag[2]
-temp[i, 21] <- vcov_ols_fgls_diag[3]
+temp[i, 15] <- rho_hat_fgls
+temp[i, 16] <- sigma2_hat_fgls
+temp[i, 17] <- b_ols_fgls[1]
+temp[i, 18] <- b_ols_fgls[2]
+temp[i, 19] <- b_ols_fgls[3]
 
-temp[i, 22] <- sqrt(vcov_ols_fgls_diag[1])
-temp[i, 23] <- sqrt(vcov_ols_fgls_diag[2])
-temp[i, 24] <- sqrt(vcov_ols_fgls_diag[3])
-temp[i, 25] <- (b_ols_fgls[1])/sqrt(vcov_ols_fgls_diag[1])
-temp[i, 26] <- (b_ols_fgls[2])/sqrt(vcov_ols_fgls_diag[2])
-temp[i, 27] <- (b_ols_fgls[3])/sqrt(vcov_ols_fgls_diag[3])
+temp[i, 20] <- vcov_ols_fgls_diag[1]
+temp[i, 21] <- vcov_ols_fgls_diag[2]
+temp[i, 22] <- vcov_ols_fgls_diag[3]
 
-temp[i, 28] <- vcovHCCM0[1]
-temp[i, 29] <- vcovHCCM0[2]
-temp[i, 30] <- vcovHCCM0[3]
-temp[i, 31] <- vcovHCCM3[1]
-temp[i, 32] <- vcovHCCM3[2]
-temp[i, 33] <- vcovHCCM3[3]
+temp[i, 23] <- sqrt(vcov_ols_fgls_diag[1])
+temp[i, 24] <- sqrt(vcov_ols_fgls_diag[2])
+temp[i, 25] <- sqrt(vcov_ols_fgls_diag[3])
+temp[i, 26] <- (b_ols_fgls[1])/sqrt(vcov_ols_fgls_diag[1])
+temp[i, 27] <- (b_ols_fgls[2])/sqrt(vcov_ols_fgls_diag[2])
+temp[i, 28] <- (b_ols_fgls[3])/sqrt(vcov_ols_fgls_diag[3])
+
+temp[i, 29] <- vcovHCCM0[1]
+temp[i, 30] <- vcovHCCM0[2]
+temp[i, 31] <- vcovHCCM0[3]
+temp[i, 32] <- vcovHCCM3[1]
+temp[i, 33] <- vcovHCCM3[2]
+temp[i, 34] <- vcovHCCM3[3]
 
 
 i <- i+1
 }
 
-dimnames(temp) <- list(c(), c("beta_0_ols", "beta_1_ols", "beta_2_ols", "var_b0_ols", "var_b1_ols", "var_b2_ols", "se_b0_ols", "se_b1_ols", "se_b2_ols", "t_val_b0_ols", "t_val_b1_ols", "t_val_b2_ols", "DW_Test", "rho_fgls", "sigma2_fgls", "beta_0_fgls", "beta_1_fgls", "beta_2_fgls", "var_b0_fgls", "var_b1_fgls", "var_b2_fgls", "se_b0_fgls", "se_b1_fgls", "se_b2_fgls", "t_val_b0_fgls", "t_val_b1_fgls", "t_val_b2_fgls", "var_b0_HCCM_0", "var_b1_HCCM_0", "var_b2_HCCM_0", "var_b0_HCCM_3", "var_b1_HCCM_3", "var_b2_HCCM_3"))
+dimnames(temp) <- list(c(), c("beta_0_ols", "beta_1_ols", "beta_2_ols", "var_b0_ols", "var_b1_ols", "var_b2_ols", "se_b0_ols", "se_b1_ols", "se_b2_ols", "t_val_b0_ols", "t_val_b1_ols", "t_val_b2_ols", "DW_Test", "BP_Test", "rho_fgls", "sigma2_fgls", "beta_0_fgls", "beta_1_fgls", "beta_2_fgls", "var_b0_fgls", "var_b1_fgls", "var_b2_fgls", "se_b0_fgls", "se_b1_fgls", "se_b2_fgls", "t_val_b0_fgls", "t_val_b1_fgls", "t_val_b2_fgls", "var_b0_HCCM_0", "var_b1_HCCM_0", "var_b2_HCCM_0", "var_b0_HCCM_3", "var_b1_HCCM_3", "var_b2_HCCM_3"))
 
    
 ```
   
+# Problem 2  
+  
+Now assume the model is homoskedastic. However, $\varepsilon_t=\rho\varepsilon_{t-1}+v_t$ and the $v_t$ are independent normal random variables with zero mean and variance $E[v_t^2]=\sigma_v^2$. Generate 100 samples of $y$, each of size 20 with $\rho=0.8$ and $\sigma_v^2=6.4$.  
+  
+## (2.a)  
+  
+Estiamte the parameters using the least squares principle and provide their covariance matrix. Compare your results with the true parameters. What can you conclude?  
+  
+The OLS paramaters are consistent with previous results, however, the vcov matrix is not correct due to autocorrelation. Without testing it would be difficult to know the nature of the problem. See table 4 for OLS paramater and vcov estimates.  
+  
+## (2.b)  
+  
+Test for the presence ofautocorrelation? What do you conclude?  
+  
+We can use the Durbin-Watson Test:  
+  
+The Hypotheses for the Durbin Watson test are:  
+  
+$H_0=$ no first order autocorrelation.  
+  
+$H_1=$ first order correlation exists.  
+  
+Assumptions are:  
+  
+That the errors are normally distributed with a mean of 0.  
+  
+The errors are stationary.  
+  
+\[DW = \frac{{\sum\limits_{t = 2}^T {{{({\varepsilon _t} - {\varepsilon _{t - 1}})}^2}} }}{{\sum\limits_{t = 1}^T {\varepsilon _t^2} }}\]  
+  
+where,  
+  
+$\varepsilon_t$ are residuals from an ordinary least squares regression.  
+  
+The Durbin Watson test reports a test statistic, with a value from 0 to 4, where:  
+  
+if $DW = 2$ then no autocorrelation.  
+  
+if $0 < DW < 2$ then positive autocorrelation (common in time series data).  
+  
+if $2 < DW < 4$ then negative autocorrelation (less common in time series data).  
+  
+Using the Durbin-Watson test (DW_Test) we obtain an avaerage DW test statistic of 3.290 which indicate we do have autocorrelation that needs to be addressed. When we run the BP test (equation 2) we obtain a test statistic of 2.687 which indicates no problems with heteroskedasticity, as we already know since we constructed the data in theis fashion.  
+  
+## (2.c)  
+  
+Assuming the errors follow AR(1) process, estimate the parameters using GLS and provide their covariance matrix.  
+  
+To obtain the paramaters for the structure of the errors, in this case, AR(1), we can employ an FGLS method. In this situation we will use the technique developed by Cochrane and Orcutt (1949) which makes use of an iterative process to converge on the best fit for $\sigma^2$ and $\rho$. Once we have our error paramaters we can construct $\Omega^{-1}$ and estimate our data paramaters (beta's) and variance-covariance matrix, using FGLS.  The results are given in table 4 (below). We see that using the Cochrane–Orcutt method gives relativly accurate estimates of our $\hat\sigma^2$ and $\hat\rho$ paramaters. Our true values of rho and sigma squared are 0.8 and 6.4 and we obtain an estimated of $\hat\rho=0.755$ and $\hat\sigma^2=6.055$. With a larger sample size I suspect our estimates would be more accurate but considering a sample size of 20, I feel that these estimates are impressive.  
+  
+Our beta estimates, using FGLS are a bit on the low side, again a possible situation of the stocastic nature of multiple experiments and low sample size. But the estimates are resonable. The variance-covariance matrix is much tighter that the OLS estimates so we can see the FGLS procedure does a good job at correcting for the autocorrelation embedded in our data.  The t-values indicate that our paramaters are significant.  
+  
+To help us better understand the distribution of the MLE paramater estimates over the range of the 100 experiments, I provide density plot's (below).  
+  
 ```{r, echo=FALSE, message=FALSE, results='asis', fig.height=3, results='asis'}
 
-stargazer(temp, header=F, type="latex", summary = T, font.size = "small", notes= c("good 1 = meats", "good 2 = dairy", "good 3 = beans"), notes.align= "l", flip = F, float = T, float.env = "table", title="Summary Statistics", median = F)
+stargazer(temp, header=F, type="latex", summary = T, font.size = "small", notes= c(), notes.align= "l", flip = F, float = T, float.env = "table", title="Summary Statistics: Problem 2, part (a), (b), and (c)", median = F)
 
 ```
+  
+```{r, echo=FALSE, message=FALSE, results='asis', fig.height=3, results='asis'}
+
+par(mfrow=c(1,3))
+plot(density(temp[,17]), main= expression(paste("FGLS-", beta[0], sep="")))
+plot(density(temp[,18]), main= expression(paste("FGLS-", beta[1], sep="")))
+plot(density(temp[,19]), main= expression(paste("FGLS-", beta[2], sep="")))
+par(mfrow=c(1,2))
+plot(density(temp[,15]), main= expression(paste("FGLS-", rho, sep="")))
+plot(density(temp[,16]), main= expression(paste("FGLS-", sigma^2, sep="")))
 
 
+```
+  
+## (2.d)
