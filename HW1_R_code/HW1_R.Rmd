@@ -434,7 +434,7 @@ n=20 # sample size
 k=3 # number of paramaters in model
 reps <- 1e2 # number of ols iterations
 i <- 1 # counter
-temp <- matrix(nrow = reps, ncol = 5) # matrix to stuff results into dim= "reps" X 3
+temp <- matrix(nrow = reps, ncol = 13) # matrix to stuff results into dim= "reps" X 3
 x1 <- data$X2
 x2 <- data$X3
 
@@ -457,7 +457,7 @@ covb <- diag(sigma2 * solve(crossprod(X, X)))
 
 DW_ols <- lm(y~x1+x2)
 DW_test <- dwtest(DW_ols)
-DW_test
+#DW_test
 
 # ehat_lag <- ehat[-1]
 # ehat_lag1 <- ehat[-20]
@@ -479,12 +479,26 @@ vcov_ols_fgls <- sigma2 * (solve( crossprod(X, X) ) %*% ( t(X) %*% omega_hat_inv
 
 vcov_ols_fgls_diag <- diag(vcov_ols_fgls)
 
+temp[i, 1] <- b_ols[1]
+temp[i, 2] <- b_ols[2]
+temp[i, 3] <- b_ols[3]
+temp[i, 4] <- covb[1]
+temp[i, 5] <- covb[2]
+temp[i, 6] <- covb[3]
+temp[i, 7] <- sqrt(covb[1])
+temp[i, 8] <- sqrt(covb[2])
+temp[i, 9] <- sqrt(covb[3])
+temp[i, 10] <- mean(b_ols[1]/sqrt(covb[1]))
+temp[i, 11] <- mean(b_ols[2]/sqrt(covb[2]))
+temp[i, 12] <- mean(b_ols[3]/sqrt(covb[3]))
+temp[i, 13] <- DW_test$statistic
 
-temp[i,1] <- rho_hat_fgls
-temp[i,2] <- sigma2_hat_fgls
-temp[i,3] <- b_ols_fgls[1]
-temp[i,4] <- b_ols_fgls[2]
-temp[i,5] <- b_ols_fgls[3]
+
+# temp[i,1] <- rho_hat_fgls
+# temp[i,2] <- sigma2_hat_fgls
+# temp[i,3] <- b_ols_fgls[1]
+# temp[i,4] <- b_ols_fgls[2]
+# temp[i,5] <- b_ols_fgls[3]
 
 
 i <- i+1
