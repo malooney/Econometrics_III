@@ -377,10 +377,12 @@ ${\sigma ^2} \simeq \exp ({\alpha _0} + {\alpha _1}{x_1})$
 
 cat("\014")
 rm(list=ls())
-#set.seed(12345)
+set.seed(12345)
 
  library(readr)
+library(lmtest)
 
+# Cochrane–Orcutt procedure
 # C.O. funcition requires Y, X (with constant), OLS b.
 c.o.proc <- function(Y,X,b_0,tol){
   T <- length(y)
@@ -419,6 +421,13 @@ c.o.proc <- function(Y,X,b_0,tol){
 
 ################################################################################
 
+autocorr.mat <- function(p = 20, rho = 0.8) {
+  mat <- diag(p)
+  return(rho^abs(row(mat)-col(mat)))
+}
+
+################################################################################
+
 data <- read_csv("~/Google Drive/digitalLibrary/*Econometrics3/Econometrics3/HW1_MatLab_Code/data.csv", col_names = FALSE)
 
 n=20 # sample size
@@ -450,19 +459,43 @@ DW_ols <- lm(y~x1+x2)
 DW_test <- dwtest(DW_ols)
 DW_test
 
-ehat_lag <- ehat[-1]
-ehat_lag1 <- ehat[-20]
-lm(ehat_lag~ ehat_lag1-1)
+# ehat_lag <- ehat[-1]
+# ehat_lag1 <- ehat[-20]
+# lm(ehat_lag~ ehat_lag1-1)
 
-
+# using Cochrane–Orcutt procedure
 rho_est <- c.o.proc(Y=y, X=X, b_0=b_ols, tol = 1e-8)
-temp[i,1] <- -rho_est$rho.regression$coefficients[1]
-temp[i,2] <- sigma2
+
+rho_hat_fgls <- -rho_est$rho.regression$coefficients[1]
+sigma2_hat_fgls <- rho_est$Cochrane_Orc.Proc$sigma^2
+
+omega_hat <- sigma2_hat_fgls* autocorr.mat(p=n, rho= rho_hat_fgls)
+omega_hat_inv <- solve(omega_hat)
+
+b_ols_fgls <- solve( t(X) %*% omega_hat_inv %*% X ) %*% ( t(X) %*% omega_hat_inv %*% y )
+
+# pg 270 greene, 7th Ed.
+vcov_ols_fgls <- sigma2 * (solve( crossprod(X, X) ) %*% ( t(X) %*% omega_hat_inv %*% X ) %*% solve(crossprod(X, X)) )
+
+vcov_ols_fgls_diag <- diag(vcov_ols_fgls)
+
+
+temp[i,1] <- rho_hat_fgls
+temp[i,2] <- sigma2_hat_fgls
+temp[i,3] <- b_ols_fgls[1]
+temp[i,4] <- b_ols_fgls[2]
+temp[i,5] <- b_ols_fgls[3]
+
 
 i <- i+1
 }
- mean(temp[,1])
- mean(temp[,2])
+
+mean(temp[,1])
+mean(temp[,2])
+mean(temp[,3])
+mean(temp[,4])
+mean(temp[,5])
+   
 ```
 
 

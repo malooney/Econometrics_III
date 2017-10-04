@@ -194,6 +194,7 @@ while i<=m
     %% @ sign is to create a handle for a function, so that, later, you can call that handle instead of the function
 lnl=@(theta)0.5*n*log(2*pi)+0.5*n*sum(theta(4)+theta(5)*X1)... % @ symbol creates a handle named lnl to the function 0.5*n*log(2*pi)+........./(exp(theta(4)+theta(5)*X1))). theta contains arguments or inputs to the function. three dots are for the line continuation
     +0.5*sum(((y-theta(1)-theta(2)*X1-theta(3)*X2).^2)./(exp(theta(4)+theta(5)*X1)));
+
 options = optimoptions('fminunc','Algorithm','quasi-newton');
 betamle(:,i)=fminunc(lnl,theta0,options);
 Betamle=[betamle, betamle(:,i)];
@@ -461,7 +462,9 @@ y = 10 + X1 + X2 + e';
 lnl=@(theta)0.5*n*log(2*pi)+0.5*n*sum(theta(4)+theta(5)*X1)... % @ symbol creates a handle named lnl to the function 0.5*n*log(2*pi)+........./(exp(theta(4)+theta(5)*X1))). theta contains arguments or inputs to the function. three dots are for the line continuation
     +0.5*sum(((y-theta(1)-theta(2)*X1-theta(3)*X2).^2)./(exp(theta(4)+theta(5)*X1)));
 options = optimoptions('fminunc','Algorithm','quasi-newton');
+
 betamle(:,i)=fminunc(lnl,theta0,options);
+
 Betamle=[betamle, betamle(:,i)];
  
 i=i+1
