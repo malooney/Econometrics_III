@@ -735,7 +735,7 @@ cat("\014")
 rm(list=ls())
 #set.seed(12345)
 
- library(readr)
+library(readr)
 
 data <- read_csv("~/Google Drive/digitalLibrary/*Econometrics3/Econometrics3/HW1_MatLab_Code/data.csv", col_names = FALSE)
 
@@ -743,7 +743,7 @@ n=20 # sample size
 k=3 # number of paramaters in model
 reps <- 1e2 # number of ols iterations
 i <- 1 # counter
-temp <- matrix(nrow = reps, ncol = 20) # matrix to stuff results into dim= "reps" X 3
+temp <- matrix(nrow = reps, ncol = 21) # matrix to stuff results into dim= "reps" X 3
 x1 <- data$X2
 x2 <- data$X3
 
@@ -761,7 +761,7 @@ hw1.loglike <- function(params, y, x1, x2, y_t, y_t_1, x1_t, x2_t, x1_t_1, x2_t_
   
 # lnL= (-0.5* log(2* pi)- 0.5* log(sigma^2)+ 0.5* log(1- rho^2)- ( ( (1- rho^2)* (y[1]- (beta1+ beta2* x1[1]+ beta3* x2[1]) )^2 ) / (sigma*2.5^2) ) ) + sum( -0.5* log(2* pi)- 0.5* log(sigma^2) - ( ( (y_t - rho* y_t_1)- ( 2* beta2* x1_t+ 2* rho* beta3* x2_t) )^2  / (2* sigma^2) ) )
   
-lnL= (-0.5* log(2* pi)- 0.5* log(sigma^2)+ 0.5* log(1- rho^2)- ( ( (1- rho^2)* (y[1]- (beta1+ beta2* x1[1]+ beta3* x2[1]) )^2 ) / (sigma*2.5^2) ) ) + sum( -0.5* log(2* pi)- 0.5* log(sigma^2) - ( ( (y_t - rho* y_t_1)- (beta1*(1-rho)+ beta2*(x1_t- rho*x1_t_1)+ beta3*(x2_t- rho*x2_t_1)) )^2  / (2* sigma^2) ) )
+lnL= (-0.5* log(2* pi)- 0.5* log(sigma^2)+ 0.5* log(1- rho^2)- ( ( (1- rho^2)* (y[1]- (beta1+ beta2* x1[1]+ beta3* x2[1]) )^2 ) / (2*sigma^2) ) ) + sum( -0.5* log(2* pi)- 0.5* log(sigma^2) - ( ( (y_t - rho* y_t_1)- (beta1*(1-rho)+ beta2*(x1_t- rho*x1_t_1)+ beta3*(x2_t- rho*x2_t_1)) )^2  / (2* sigma^2) ) )
   
   return(lnL)
 }
@@ -811,16 +811,10 @@ x2_t_1 = x2_t[-1]
 
 beta_mle <- hw1.mle(par0=par0, y=y, x1=x1, x2=x2, y_t=y_t, y_t_1=y_t_1, x1_t=x1_t, x2_t=x2_t, x1_t_1=x1_t_1, x2_t_1=x2_t_1) # run MLE precedure
 
-beta_mle
-
-#beta_mle1 <- nlm(hw1.loglike, p=par0, y=y, x1=x1, x2=x2) # run MLE precedure
-
 beta_mle_params <- matrix(beta_mle$par)
-#hess <- beta_mle$hessian
-#beta_mle_params
+
 var_mle <- -(1)* diag(solve(beta_mle$hessian))
-#var_mle
-# dimnames(beta_mle_params) <- list(c(), c("betas_mle"))
+
 temp[i, 1] <- beta_mle_params[1]
 temp[i, 2] <- beta_mle_params[2]
 temp[i, 3] <- beta_mle_params[3]
@@ -843,6 +837,7 @@ temp[i, 17] <- mean(beta_mle_params[2]/sqrt(var_mle[2]))
 temp[i, 18] <- mean(beta_mle_params[3]/sqrt(var_mle[3]))
 temp[i, 19] <- -mean(beta_mle_params[4]/sqrt(var_mle[4]))
 temp[i, 20] <- mean(beta_mle_params[5]/sqrt(var_mle[5]))
+temp[i, 21] <- beta_mle$value
 
 #mle_se <- sqrt(var_mle)
 
@@ -853,7 +848,7 @@ temp[i, 20] <- mean(beta_mle_params[5]/sqrt(var_mle[5]))
 i <- i+1
 }
 
-dimnames(temp) <- list(c(), c("beta_0_mle", "beta_1_mle", "beta_2_mle", "rho_mle", "sigma_mle", "var_b0_mle", "var_b1_mle", "var_b2_mle", "var_rho_mle", "var_sigma_mle", "se_b0_mle", "se_b1_mle", "se_b2_mle", "se_rho_mle", "se_sigma_mle", "t_val_b0_mle", "t_val_b1_mle", "t_val_b2_mle", "t_val_rho_mle", "t_val_sigma_mle"))
+dimnames(temp) <- list(c(), c("beta_0_mle", "beta_1_mle", "beta_2_mle", "rho_mle", "sigma_mle", "var_b0_mle", "var_b1_mle", "var_b2_mle", "var_rho_mle", "var_sigma_mle", "se_b0_mle", "se_b1_mle", "se_b2_mle", "se_rho_mle", "se_sigma_mle", "t_val_b0_mle", "t_val_b1_mle", "t_val_b2_mle", "t_val_rho_mle", "t_val_sigma_mle", "lnL_value"))
 
 
 ```
