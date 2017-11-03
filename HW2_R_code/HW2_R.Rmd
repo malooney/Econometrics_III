@@ -1,0 +1,23 @@
+---
+title: "HW2 Econometrics 3"
+author: "Matthew Aaron Looney"
+date: "10/04/2017"
+output: pdf_document
+---
+
+```{r HW2 Problem 1 data import, echo=FALSE, message=FALSE, results='asis', cache=F}
+
+cat("\014")
+rm(list=ls())
+set.seed(12345)
+
+library(readr)
+library(gvlma)
+library(lmtest)
+library(stargazer)
+
+data <- read_csv("~/Google Drive/digitalLibrary/*Econometrics3/Econometrics3/HW2_R_code/GROCERY.csv", col_names = TRUE)
+
+week1379 <- subset(data, WEEK==1379)
+
+```
