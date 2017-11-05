@@ -16,8 +16,128 @@ library(gvlma)
 library(lmtest)
 library(stargazer)
 
-data <- read_csv("~/Google Drive/digitalLibrary/*Econometrics3/Econometrics3/HW2_R_code/GROCERY.csv", col_names = TRUE)
+require(foreign)
+require(nnet)
+require(ggplot2)
+require(reshape2)
 
-week1379 <- subset(data, WEEK==1379)
+coffee <- read_csv("~/Google Drive/digitalLibrary/*Econometrics3/Econometrics3/HW2_R_code/GROCERY.csv", col_names = TRUE)
+
+week1379 <- subset(coffee, WEEK==1379 & city=="Pittsfield" & VOL_EQ != 0)
+
+price <- data.frame(price= week1379$DOLLARS/ (week1379$UNITs* week1379$VOL_EQ))
+
+week1379_Pitts_price <- cbind(week1379, price) 
+
+
 
 ```
+
+
+```{r HW2 Problem 2 data import, echo=FALSE, message=FALSE, results='asis', cache=F, warning=FALSE}
+
+cat("\014")
+rm(list=ls())
+set.seed(12345)
+
+library(readr)
+library(gvlma)
+library(lmtest)
+library(stargazer)
+library(texreg)
+
+require(foreign)
+require(nnet)
+require(ggplot2)
+require(reshape2)
+library(censReg)
+library(sampleSelection)
+
+credit <- read_csv("~/Google Drive/digitalLibrary/*Econometrics3/Econometrics3/HW2_R_code/CreditScoring.csv", col_names = TRUE)
+
+credit <- cbind(credit, data.frame(Ln_income=log(credit$INCOME)) )
+
+model <- formula(LOGSPEND~ Ln_income+ AGE+ ADEPCNT+ OWNRENT)
+
+# linear probability model
+ols_credit <- lm(model, data=credit)
+
+
+tobit_left0 <- censReg(model, left=0, data=credit)
+
+partFX_tobit <- margEff(tobit_left0)
+
+heck_formula <- formula(CARDHLDR~ Ln_income+ AGE+ ADEPCNT+ OWNRENT)
+
+heck2Step <- heckit(heck_formula, model, data=credit)
+#heckMLE <- selection(heck_formula, model, data=credit)
+
+beta.income.sel <- heck2Step$coefficients[2]
+beta.income.out <- heck2Step$coefficients[7]
+beta.IMR <- heck2Step$coefficients[11]
+delta <- heck2Step$imrDelta
+
+marginal.effect.income <- mean(beta.income.out - beta.income.sel * beta.IMR * delta)
+
+
+```
+
+\newpage
+
+# Problem 2 
+
+Problem 2. Censoring/Truncation. Greene (2007) analyzed the de- fault behavior and monthly behavior of a large sample of credit card users (13,444).
+
+## (2.1)
+
+Estimate the following model
+
+\[\begin{gathered}
+  \log spend = {\beta _1} + {\beta _2}\ln income + {\beta _3}Age + {\beta _4}Adepcnt + \beta 5ownrent + \varepsilon  \hfill \\
+   \hfill \\ 
+\end{gathered} \]
+
+```{r echo=FALSE, message=FALSE, results='asis', cache=F, warning=FALSE}
+
+stargazer(ols_credit, tobit_left0, heck2Step, header = F, title="Regression output used to answer Problem 2")
+
+```
+
+### (2.1.a)
+
+Using OLS. What is the effect of 10% increase in income on credit card expenditure?
+
+  * Since we are dealing with log-log we can simply multiply the paramater estimate on income by ten, which gives `r ols_credit[["coefficients"]][["Ln_income"]]*10 `. So a 10% increase in income is estimated to increase credit card spending by `r ols_credit[["coefficients"]][["Ln_income"]]*10 `%.
+  
+### (2.1.b)
+
+Using Censored regression. What is the effect of 10% increase in income on credit card expenditure?
+
+We will need to employ a Censored (Tobit) Regression and calculate the Partial Effects.
+
+The general formulation for the Tobit Model (Greene 7th. ed., pg 848):
+
+\[\begin{gathered}
+  {y_i}^* = {x_i}^\prime \beta  + {\varepsilon _i} \hfill \\
+  \begin{array}{*{20}{c}}
+  {{y_i} = 0} \\ 
+  {{y_i} = {y_i}^*} 
+\end{array}\left\{ \begin{gathered}
+  {\text{if }}{y_i}^* \leqslant 0 \hfill \\
+  {\text{if }}{y_i}^* \geqslant 0 \hfill \\ 
+\end{gathered}  \right. \hfill \\ 
+\end{gathered} \]
+
+The proper Partial Effects formula:
+
+\[\frac{{\partial E[y|x]}}{{\partial x}} = \beta \Pr ob[a < {y^*} < b]\]
+
+Where I compute the partial effect at each observation and then compute the mean.
+
+The parginal effect of Ln_income on LOGSPEND is `r partFX_tobit[1]`. Therefore, a 10% increase of income is estiimated to increase credit card spending by `r 10*partFX_tobit[1]`.
+
+### (2.1.c)
+
+Using Heckman Two-Step Estimator. What the is effect of 10% increase in income on credit card expenditure?
+
+
