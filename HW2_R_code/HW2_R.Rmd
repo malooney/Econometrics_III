@@ -34,7 +34,7 @@ week1379_Pitts_price <- cbind(week1379, price)
 ```
 
 
-```{r HW2 Problem 2 data import, echo=FALSE, message=FALSE, results='asis', cache=F, warning=FALSE}
+```{r HW 2 Problem 2, echo=FALSE, message=FALSE, results='asis', cache=F, warning=FALSE}
 
 cat("\014")
 rm(list=ls())
@@ -61,7 +61,6 @@ model <- formula(LOGSPEND~ Ln_income+ AGE+ ADEPCNT+ OWNRENT)
 
 # linear probability model
 ols_credit <- lm(model, data=credit)
-
 
 tobit_left0 <- censReg(model, left=0, data=credit)
 
@@ -128,6 +127,67 @@ The general formulation for the Tobit Model (Greene 7th. ed., pg 848):
 \end{gathered}  \right. \hfill \\ 
 \end{gathered} \]
 
+The censored regression model is a generalisation of the standard Tobit model.
+The dependent variable can be either left-censored, right-censored,
+or both left-censored and right-censored,
+where the lower and/or upper limit of the dependent variable can be any number:
+\begin{align}
+y_i^* &= x_i ' \beta + \varepsilon_i\\
+y_i &=
+   \begin{cases}
+   a     & \text{if } y_i^* \leq a\\
+   y_i^* & \text{if } a < y_i^* < b\\
+   b     & \text{if } y_i^* \geq b
+   \end{cases}
+\end{align}
+Here $a$ is the lower limit and $b$ is the upper limit
+of the dependent variable.
+If $a = -\infty$ or $b = \infty$,
+the dependent variable is not left-censored or right-censored,
+respectively.
+
+Censored regression models (including the standard Tobit model)
+are usually estimated by the Maximum Likelihood (ML) method.
+Assuming that the disturbance term $\varepsilon$ follows a normal distribution
+with mean $0$ and variance $\sigma^2$,
+the log-likelihood function is
+
+\begin{align}
+\log L  = 
+   \sum_{i = 1}^N \bigg[ \;&
+      I_i^a \log \Phi \left( \frac{ a - x_i ' \beta }{ \sigma } \right)
+      + I_i^b \log \Phi \left( \frac{ x_i ' \beta - b }{ \sigma } \right)
+      \label{eq:logLik}\\
+   & + \left( 1 - I_i^a - I_i^b \right)
+      \left(
+         \log \phi \left( \frac{ y_i - x_i ' \beta }{ \sigma } \right)
+         - \log \sigma
+      \right)
+   \bigg], \nonumber
+\end{align}
+
+where $\phi(\cdot)$ and  $\Phi(\cdot)$ denote the probability density function
+and the cumulative distribution function, respectively,
+of the standard normal distribution,
+and $I_i^a$ and $I_i^b$ are indicator functions with
+
+\begin{align}
+I_i^a & =
+   \begin{cases}
+   1 & \text{if } y_i = a\\
+   0 & \text{if } y_i > a
+   \end{cases}\\
+I_i^b & =
+   \begin{cases}
+   1 & \text{if } y_i = b\\
+   0 & \text{if } y_i < b
+   \end{cases}
+\end{align}
+
+The log-likelihood function of the censored regression model~(\ref{eq:logLik})
+can be maximised with respect to the parameter vector $( \beta' , \sigma )'$
+using standard non-linear optimisation algorithms.
+
 The proper Partial Effects formula:
 
 \[\frac{{\partial E[y|x]}}{{\partial x}} = \beta \Pr ob[a < {y^*} < b]\]
@@ -140,4 +200,4 @@ The parginal effect of Ln_income on LOGSPEND is `r partFX_tobit[1]`. Therefore, 
 
 Using Heckman Two-Step Estimator. What the is effect of 10% increase in income on credit card expenditure?
 
-
+`r marginal.effect.income*10`
