@@ -18,3 +18,7 @@ mfx compute, predict(e(0,.))
 heckman LOGSPEND Ln_income AGE ADEPCNT OWNRENT, select(CARDHLDR Ln_income AGE ADEPCNT OWNRENT)
 
 heckman LOGSPEND Ln_income AGE ADEPCNT OWNRENT, select(CARDHLDR Ln_income AGE ADEPCNT OWNRENT) twostep
+
+mfx compute, predict(pr(0,.))
+
+mfx compute, predict(e(0,.))

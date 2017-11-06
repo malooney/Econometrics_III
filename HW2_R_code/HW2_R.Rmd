@@ -73,6 +73,7 @@ heck2Step <- heckit(heck_formula, model, data=credit)
 
 beta.income.sel <- heck2Step$coefficients[2]
 beta.income.out <- heck2Step$coefficients[7]
+
 beta.IMR <- heck2Step$coefficients[11]
 delta <- heck2Step$imrDelta
 
@@ -131,6 +132,7 @@ The censored regression model is a generalisation of the standard Tobit model.
 The dependent variable can be either left-censored, right-censored,
 or both left-censored and right-censored,
 where the lower and/or upper limit of the dependent variable can be any number:
+
 \begin{align}
 y_i^* &= x_i ' \beta + \varepsilon_i\\
 y_i &=
@@ -188,16 +190,309 @@ The log-likelihood function of the censored regression model~(\ref{eq:logLik})
 can be maximised with respect to the parameter vector $( \beta' , \sigma )'$
 using standard non-linear optimisation algorithms.
 
-The proper Partial Effects formula:
+The proper Marginal (Partial) Effects formula:
 
 \[\frac{{\partial E[y|x]}}{{\partial x}} = \beta \Pr ob[a < {y^*} < b]\]
 
-Where I compute the partial effect at each observation and then compute the mean.
+The marginal effects of an explanatory variable
+on the expected value of the dependent variable is (Greene 7th. ed., pg 849):
 
-The parginal effect of Ln_income on LOGSPEND is `r partFX_tobit[1]`. Therefore, a 10% increase of income is estiimated to increase credit card spending by `r 10*partFX_tobit[1]`.
+\begin{equation}
+ME_j = \frac{\partial E[y|x]}{\partial x_j}
+= \beta_j \; \left[
+   \Phi \left( \frac{ b - x' \beta }{ \sigma } \right) -
+   \Phi \left( \frac{ a - x' \beta }{ \sigma } \right)
+   \right]
+\end{equation}
+
+In order to compute the approximate variance covariance matrix
+of these marginal effects using the Delta method,
+we need to obtain the Jacobian matrix of these marginal effects
+with respect to all estimated parameters (including~$\sigma$):
+
+\begin{equation}
+\frac{\partial ME_j}{\partial \beta_k}
+= \Delta_{jk} \left[
+   \Phi \left( \frac{ b - x' \beta }{ \sigma } \right) -
+   \Phi \left( \frac{ a - x' \beta }{ \sigma } \right)
+   \right]
+- \frac{\beta_j \; x_k}{\sigma} \; \left[
+   \phi \left( \frac{ b - x' \beta }{ \sigma } \right) -
+   \phi \left( \frac{ a - x' \beta }{ \sigma } \right)
+   \right]
+\end{equation}
+
+and
+
+\begin{equation}
+\frac{\partial ME_j}{\partial \sigma}
+= - \beta_j \; \left[
+   \phi \left( \frac{ b - x' \beta }{ \sigma } \right) \;
+       \frac{ b - x' \beta }{ \sigma^2 } -
+   \phi \left( \frac{ a - x' \beta }{ \sigma } \right) \;
+       \frac{ a - x' \beta }{ \sigma^2 }
+   \right],
+\label{eq:margEffJacSigma}
+\end{equation}
+
+where $\Delta_{jk}$ is ``Kronecker's Delta''
+
+with $\Delta_{jk} = 1$ for $j=k$ and $\Delta_{jk} = 0$ for $j \neq k$.
+If the upper limit of the censored dependent variable ($b$) is infinity
+or the lower limit of the censored dependent variable ($a$) is minus infinity,
+the terms in the square brackets in equation~(\ref{eq:margEffJacSigma})
+that include $b$ or $a$, respectively, have to be removed.
+
+* Where I compute the partial effect at each observation and then compute the mean.
+
+* The parginal effect of Ln_income on LOGSPEND is `r partFX_tobit[1]`. Therefore, a 10% increase of income is estiimated to increase credit card spending by `r 10*partFX_tobit[1]`.
 
 ### (2.1.c)
 
 Using Heckman Two-Step Estimator. What the is effect of 10% increase in income on credit card expenditure?
+  
+Heckman's standard sample selection model
+is also called ``Tobit-2'' model (Amemiya 1984, Amemiya 1985).
+It consists of the following (unobserved) structural process:
 
-`r marginal.effect.income*10`
+\begin{align}
+  y_i^{S*} &= {\vec{\beta}^{S\prime}} \vec{x}_i^S + \varepsilon_i^S
+  \label{eq:probit*}
+  \\
+  y_i^{O*} &= {\vec{\beta}^{O\prime}} \vec{x}_i^O + \varepsilon_i^O,
+  \label{eq:outcome*}
+\end{align}
+
+where $y_i^{S*}$ is the realisation of the the latent value of the
+selection ``tendency'' for the individual $i$, and $y_i^{O*}$ is the
+latent outcome.  $\vec{x}_i^S$ and $\vec{x}_i^O$ are explanatory
+variables for the selection and outcome equation, respectively.
+$\vec{x}^S$ and $\vec{x}^O$ may or may not be equal.  We observe
+
+\begin{align}
+  y_i^S
+  &=
+  \begin{cases}
+    0 & \quad \text{if } y_i^{S*} < 0
+    \label{eq:probit}
+    \\
+    1 & \quad \text{otherwise}
+  \end{cases}
+  \\
+  y_i^O
+  &=
+  \begin{cases}
+    0 & \quad \text{if } y_i^{S} = 0\\
+    y_i^{O*} & \quad \text{otherwise},
+  \end{cases}
+\end{align}
+
+i.e.\ we observe the outcome only if the latent selection variable
+$y^{S*}$ is positive.  The observed dependence between $y^O$ and $x^O$
+can now be written as
+
+\begin{equation}
+  E [y^O | \vec{x}^O = \vec{x}_i^O , \vec{x}^S = \vec{x}_i^S , y^S = 1]
+  =
+  {\vec{\beta}^{O\prime}} \vec{x}_i^O
+  +
+  E [ \varepsilon^O|\varepsilon^S \ge -{\vec{\beta}^{S\prime}} \vec{x}_i^S ].
+\end{equation}
+
+Estimating the model above by OLS gives in general biased results, as
+$E [ \varepsilon^O|\varepsilon^S \ge -{\vec{\beta}^{S\prime}} \vec{x}_i^S ]
+\not = 0$, unless $\varepsilon^O$ and $\varepsilon^S$ are mean independent
+(in this case $\varrho = 0$).
+
+Assuming the error terms follow a bivariate normal distribution:
+
+\begin{equation}
+  \begin{pmatrix}
+    \varepsilon^S\\
+    \varepsilon^O
+  \end{pmatrix}
+  \sim
+  N\left(
+    \begin{pmatrix}
+      0\\
+      0
+    \end{pmatrix},
+    \begin{pmatrix}
+      1 & \varrho\\
+      \varrho & \sigma^2
+    \end{pmatrix}
+  \right),
+   \label{eq:correlation}
+\end{equation}
+
+we may employ the following simple strategy: find the
+expectations $E [ \varepsilon^O|\varepsilon^S \ge
+-{\vec{\beta}^{S\prime}} \vec{x}_i^S ]$, also called the \emph{control
+  function}, by estimating the selection equations
+and by probit, and thereafter insert these
+expectations as additional
+covariates (see Greene 2002 for details).  Accordingly, we
+may write:
+
+\begin{equation}
+  y_i^O
+  =
+  {\vec{\beta}^{O\prime}} \vec{x}_i^O
+  +
+  E [ \varepsilon^O|\varepsilon^S \ge
+  -{\vec{\beta}^{S\prime}} \vec{x}_i^S ]
+  +
+  \eta_i
+  \equiv
+  {\vec{\beta}^{O\prime}} \vec{x}_i^O
+  +
+  \varrho \sigma \lambda({\vec{\beta}^{S\prime}} \vec{x}_i^S)
+  +
+  \eta_i
+\end{equation}
+
+where $\lambda(\cdot) = \phi(\cdot)/\Phi(\cdot)$ is commonly referred
+to as inverse Mill's ratio, $\phi(\cdot)$ and $\Phi(\cdot)$ are
+standard normal density and cumulative distribution functions and
+$\eta$ is a new disturbance term, independent of $\vec{x}^{O}$ and $\vec{x}^{S}$.  The
+unknown multiplicator $\varrho \sigma$ can be estimated by OLS
+($\hat{\beta}^\lambda$).
+Essentially, we describe the selection problem as an omitted variable
+problem, with $\lambda(\cdot)$ as the omitted variable.  Since the true
+$\lambda(\cdot)$s are generally
+unknown, they are replaced by estimated values based on the probit
+estimation in the first step.
+
+The relations also
+reveal the interpretation of $\varrho$.  If $\varrho > 0$, the third
+term in the right hand side is positive as
+the observable observations tend to have above average realizations of
+$\varepsilon^{O}$.  This is usually referred to as positive
+selection in a sense that the observed outcomes are better than
+the average.  In this case, the OLS estimates are upward biased.
+
+An estimator of the variance of $\varepsilon^O$ can be obtained by
+
+\begin{equation}
+\hat{\sigma}^2
+= \frac{\hat{\vec{\eta}}' \hat{\vec{\eta}}}{n^O}
+   + \frac{\sum_i \hat{\delta}_i}{n^O} \left. \hat{\beta}^\lambda \right.^2
+\end{equation}
+
+where $\hat{\vec{\eta}}$ is the vector of residuals from the OLS
+estimation, $n^O$ is the number of
+observations in this estimation, and $\hat{\delta}_i = \hat{\lambda}_i
+( \hat{\lambda}_i + \left. \hat{\vec{\beta}}^S \right. ' \vec{x}_i^S
+)$.  Finally, an estimator of the correlation between $\varepsilon^S$
+and $\varepsilon^O$ can be obtained by $\hat{\varrho} =
+\hat{\beta}^\lambda / \hat{\sigma}$.  Note that $\hat{\varrho}$ can be
+outside of the $[-1, 1]$ interval.
+
+Since the estimation is not based on the
+true but on estimated values of $\lambda(\cdot)$, the standard OLS
+formula for the coefficient variance-covariance matrix is not
+appropriate [p.~157]{heckman79}.  A consistent estimate of the
+variance-covariance matrix can be obtained by
+
+\begin{equation}
+\widehat{VAR} \left[ \hat{\vec{\beta}}^O, \hat{\vec{\beta}}^\lambda \right]
+= \hat{\sigma}^2
+   \left[ {\bf{X}_\lambda^{O\prime}} \bf{X}_\lambda^O \right]^{-1}
+   \left[ {\bf{X}_\lambda^{O\prime}}
+      \left( \bf{I} - \hat{\varrho}^2 \hat{\bf{\Delta}} \right)
+      \bf{X}_\lambda^{O} + \bf{Q} \right]
+   \left[ {\bf{X}_\lambda^O}' \bf{X}_\lambda^O \right]^{-1}
+\end{equation}
+
+where
+
+\begin{equation}
+\bf{Q}
+= \hat{\varrho}^2
+   \left( {\bf{X}_\lambda^{O\prime}} \hat{\bf{\Delta}} \bf{X}^S \right)
+   \widehat{VAR} \left[ \hat{\vec{\beta}}^S \right]
+   \left( {\bf{X}^{S\prime}} \hat{\bf{\Delta}} \bf{X}_\lambda^O \right),
+\end{equation}
+
+$\bf{X}^S$ is the matrix of all observations of $\vec{x}^S$,
+$\bf{X}_\lambda^O$ is the matrix of all observations
+of $\vec{x}^O$ and $\hat{\lambda}$,
+$\bf{I}$ is an identity matrix,
+$\hat{\bf{\Delta}}$ is a diagonal matrix with all $\hat{\delta}_i$
+on its diagonal, and
+$\widehat{VAR} \left[ \hat{\vec{\beta}}^S \right]$ is the estimated variance
+covariance matrix of the probit estimate
+(Greene 1981, Greene 2002).
+
+This is the original idea by (Heckman 1976).  As the model is
+fully parametric, it is straightforward to construct a more efficient maximum likelihood (ML)
+estimator.  Using the properties of
+a bivariate normal distribution, it is easy to show that the log-likelihood can
+be written as
+
+\begin{align}
+  L
+  & =
+  \sum_{\{i:y_i^S = 0\}}
+  \log \Phi(-{\vec{\beta}^{S\prime}} \vec{x}_i^S ) +
+  \\
+  & +
+  \sum_{\{i:y_i^S = 1\}} \left[
+    \log \Phi \left(\frac{
+        {\vec{\beta}^{S\prime}} \vec{x}_i^S +
+        \displaystyle\frac{\varrho}{\sigma}(y_i^O - {\vec{\beta}^{O\prime}} \vec{x}_i^O)}
+      {\sqrt{1 - \varrho^2}}
+      \right)
+      -\frac{1}{2} \log 2\pi -
+      \log \sigma -
+      \frac{1}{2} \frac{(y_i^O - {\vec{\beta}^{O\prime}} \vec{x}_i^O)^2}{\sigma^2} \right].
+\end{align}
+
+The original article suggests using the two-step solution for exploratory work and
+as initial values for ML estimation. This was a result of the high costs of estimation. Nowadays, costs are no longer an issue, however, the two-step solution allows certain generalisations more easily than ML, and is more robust in certain circumstances.
+
+This model and its derivations were introduced in the 1970s and 1980s.
+The model is well identified if the exclusion restriction
+is fulfilled, i.e.\ if $\vec{x}^S$ includes a component with a
+substantial explanatory power but which is not present in $\vec{x}^O$.
+This means essentially that we have a valid instrument.  If this is
+not the case, the identification is related to the non-linearity of
+the inverse Mill's ratio $\lambda(\cdot)$.  The exact form of it stems
+from the distributional assumptions.  During the recent decades,
+various semiparametric estimation techniques have been increasingly
+used in addition to the Heckman model.
+
+
+* Having run the Heckman two-step estimation procedure and calculated the marginal effect of income on credi card spending we see that a 10% increase in income is estimated to increase credit card spending by `r marginal.effect.income*10`%.
+
+### (2.2.a)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
