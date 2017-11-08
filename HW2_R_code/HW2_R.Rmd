@@ -3,6 +3,9 @@ title: "HW2 Econometrics 3"
 author: "Matthew Aaron Looney"
 date: "10/04/2017"
 output: pdf_document
+
+header-includes:
+  - \usepackage{xcolor}
 ---
 
 ```{r HW2 Problem 1 data import, echo=FALSE, message=FALSE, results='asis', cache=F}
@@ -45,13 +48,17 @@ library(gvlma)
 library(lmtest)
 library(stargazer)
 library(texreg)
-
+library(ggplot2)
 require(foreign)
 require(nnet)
 require(ggplot2)
 require(reshape2)
 library(censReg)
 library(sampleSelection)
+library(truncreg)
+library(mfx)
+library(MASS)
+library(AER)
 
 credit <- read_csv("~/Google Drive/digitalLibrary/*Econometrics3/Econometrics3/HW2_R_code/CreditScoring.csv", col_names = TRUE)
 
@@ -79,6 +86,30 @@ delta <- heck2Step$imrDelta
 
 marginal.effect.income <- mean(beta.income.out - beta.income.sel * beta.IMR * delta)
 
+credit_sub <- subset(credit, CARDHLDR==1)
+
+ols_credit_sub <- lm(model, data=credit_sub)
+tobit_Trunc_left0 <- truncreg(model, data=credit_sub, subset = LOGSPEND>=0)
+
+model2 <- model <- formula(MAJORDRG~ Ln_income+ AGE+ ADEPCNT+ OWNRENT+ EXP_INC)
+
+glm.poisson <- glm(model, data=credit_sub, family = poisson())
+dispersiontest(glm.poisson,trafo=1)
+#poissonmfx(glm.poisson, data=credit_sub)
+
+phat <- predict(glm.poisson, type="response")
+
+## create the plot
+ggplot(credit_sub[,], aes(x = Ln_income[], y = phat[], colour = MAJORDRG[])) +
+  geom_point(aes(y = MAJORDRG[]), alpha=.5) +
+  geom_line(size = 1) +
+  labs(x = "Ln_income", y = "Expected Major Derog")
+
+
+glm.quasipoisson <- glm(model, data=credit_sub, family = quasipoisson())
+
+glm.ngbin <- glm.nb(model, data=credit_sub)
+
 
 ```
 
@@ -93,13 +124,15 @@ Problem 2. Censoring/Truncation. Greene (2007) analyzed the de- fault behavior a
 Estimate the following model
 
 \[\begin{gathered}
-  \log spend = {\beta _1} + {\beta _2}\ln income + {\beta _3}Age + {\beta _4}Adepcnt + \beta 5ownrent + \varepsilon  \hfill \\
+  \log spend = {\beta _1} + {\beta _2}\ln income + {\beta _3}Age + {\beta _4}Adepcnt + \beta_5ownrent + \varepsilon  \hfill \\
    \hfill \\ 
 \end{gathered} \]
 
 ```{r echo=FALSE, message=FALSE, results='asis', cache=F, warning=FALSE}
 
-stargazer(ols_credit, tobit_left0, heck2Step, header = F, title="Regression output used to answer Problem 2")
+stargazer(credit, header=F, type="latex", summary = T, font.size = "small", notes= c(), notes.align= "l", flip = F, float = T, float.env = "table", title="Summary Statistics: Problem 2", median = F)
+
+stargazer(ols_credit, tobit_left0, heck2Step, header=F, type="latex", summary = T, font.size = "small", notes= c(), notes.align= "l", flip = F, float = T, float.env = "table", title="Regression output used to answer Problem 2.1", median = F)
 
 ```
 
@@ -107,7 +140,7 @@ stargazer(ols_credit, tobit_left0, heck2Step, header = F, title="Regression outp
 
 Using OLS. What is the effect of 10% increase in income on credit card expenditure?
 
-  * Since we are dealing with log-log we can simply multiply the paramater estimate on income by ten, which gives `r ols_credit[["coefficients"]][["Ln_income"]]*10 `. So a 10% increase in income is estimated to increase credit card spending by `r ols_credit[["coefficients"]][["Ln_income"]]*10 `%.
+* Since we are dealing with log-log we can simply multiply the paramater estimate on income by ten, which gives `r ols_credit[["coefficients"]][["Ln_income"]]*10 `. So a 10 percent increase in income is estimated to increase credit card spending by `r ols_credit[["coefficients"]][["Ln_income"]]*10 ` percent.
   
 ### (2.1.b)
 
@@ -243,9 +276,10 @@ or the lower limit of the censored dependent variable ($a$) is minus infinity,
 the terms in the square brackets in equation~(\ref{eq:margEffJacSigma})
 that include $b$ or $a$, respectively, have to be removed.
 
-* Where I compute the partial effect at each observation and then compute the mean.
 
-* The parginal effect of Ln_income on LOGSPEND is `r partFX_tobit[1]`. Therefore, a 10% increase of income is estiimated to increase credit card spending by `r 10*partFX_tobit[1]`.
+* Where I compute the partial effect at each observation and then compute the mean.  
+The parginal effect of Ln_income on LOGSPEND is `r partFX_tobit[1]`. Therefore, a 10 percent increase of income is estiimated to increase credit card spending by `r 10*partFX_tobit[1]`.
+
 
 ### (2.1.c)
 
@@ -462,23 +496,66 @@ from the distributional assumptions.  During the recent decades,
 various semiparametric estimation techniques have been increasingly
 used in addition to the Heckman model.
 
+* Having run the Heckman two-step estimation procedure and calculated the marginal effect of income on credi card spending we see that a 10 percent increase in income is estimated to increase credit card spending by `r marginal.effect.income*10` percent.
 
-* Having run the Heckman two-step estimation procedure and calculated the marginal effect of income on credi card spending we see that a 10% increase in income is estimated to increase credit card spending by `r marginal.effect.income*10`%.
+##(2.2)
+
+Create a subsample where only credit cardholders appear and do the following
 
 ### (2.2.a)
 
+Estimate the above model using OLS. What is the difference in credit card spending between home owner and renter?
 
+```{r echo=FALSE, message=FALSE, results='asis', cache=F, warning=FALSE}
 
+stargazer(ols_credit_sub, header=F, type="latex", summary = T, font.size = "small", notes= c(), notes.align= "l", flip = F, float = T, float.env = "table", title="Regression output used to answer Problem 2.2.a", median = F)
 
+```
 
+* When an individual moves from renting to owning a house we estimate a decrease in credit card spending by 18.37218 percent.
 
+### (2.2.b)
 
+Estimate the above model using truncated regression. What is the difference in credit card spending between home owner and renter?
 
+Following Greene (Greene 7th. ed., pg 833–839) and Davidson and MacKinnon (1993, 534–537) provide introductions to the truncated regression model.
 
+Let $y = \bf{x}\beta+\varepsilon$ the model. $y$ represents continuous outcomes either observed or not observed.
+Our model assumes that $\varepsilon~N(o, \sigma^2I)$).
 
+Let $a$ be the lower limit and $b$ be the upper limit. The log likelihood is
 
+\[\ln L =  - \frac{n}{2}\log (2\pi {\sigma ^2}) - \frac{1}{{2{\sigma ^2}}}\sum\limits_{j = 1}^n {{{({y_j} - {x_j}\beta )}^2} - \sum\limits_{j = 1}^n {\log \left\{ {\Phi \left( {\frac{{b - {x_j}\beta }}{\sigma }} \right) - \Phi \left( {\frac{{a - {x_j}\beta }}{\sigma }} \right)} \right\}} } \]
 
+* The marginal effect of an individual who moves from renting to owning a house is estimate to decrease credit card spending by 15.35483 percent.
 
+##(2.3)
+
+Now we are interested in explaining the number of major derogatory reports as function of log income, age, the number of dependents, home ownership status and ratio of monthly credit card expenditure to yearly income.
+
+New Model:
+
+\[Majordrg = {\beta _1} + {\beta _2}\ln Income + {\beta _3}Age + {\beta _4}Adepcnt + {\beta _5}Ownrent + {\beta _6}Exp_Inc + \varepsilon \]
+
+### (2.2.a)
+
+Estimate this model using Poisson regression for credit cardholders only. What is the effect of 10% increase in income on the expected value (mean) of the number of major derogatory reports? Is Poisson regression a good specification for the data at hand?
+
+### (2.2.b)
+
+Estimate this model using negative binomial regression for credit cardholders only. What is the effect of 10% increase in income on the expected value (mean) of the number of major derogatory reports?
+
+### (2.2.c)
+
+Estimate the two models taking into account the truncation.What is the effect of 10% increase in income on the expected value (mean) of the number of major derogatory reports?
+
+```{r echo=FALSE, message=FALSE, results='asis', cache=F, warning=FALSE}
+
+stargazer(credit_sub, header=F, type="latex", summary = T, font.size = "small", notes= c(), notes.align= "l", flip = F, float = T, float.env = "table", title="Summary Statistics: Problem 2.3", median = F)
+
+stargazer(glm.poisson, glm.quasipoisson, glm.ngbin, header=F, type="latex", summary = T, font.size = "small", notes= c(), notes.align= "l", flip = F, float = T, float.env = "table", title="Regression output used to answer Problem 2.3", median = F)
+
+```
 
 
 

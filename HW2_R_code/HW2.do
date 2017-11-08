@@ -22,3 +22,11 @@ heckman LOGSPEND Ln_income AGE ADEPCNT OWNRENT, select(CARDHLDR Ln_income AGE AD
 mfx compute, predict(pr(0,.))
 
 mfx compute, predict(e(0,.))
+
+keep if (CARDHLDR == 1)
+
+truncreg LOGSPEND Ln_income AGE ADEPCNT OWNRENT if LOGSPEND > 0, ll(0)
+
+mfx compute, predict(pr(0,.))
+
+mfx compute, predict(e(0,.))
