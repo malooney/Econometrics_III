@@ -59,6 +59,7 @@ library(truncreg)
 library(mfx)
 library(MASS)
 library(AER)
+library(VGAM)
 
 credit <- read_csv("~/Google Drive/digitalLibrary/*Econometrics3/Econometrics3/HW2_R_code/CreditScoring.csv", col_names = TRUE)
 
@@ -91,25 +92,32 @@ credit_sub <- subset(credit, CARDHLDR==1)
 ols_credit_sub <- lm(model, data=credit_sub)
 tobit_Trunc_left0 <- truncreg(model, data=credit_sub, subset = LOGSPEND>=0)
 
+
+
+
 model2 <- model <- formula(MAJORDRG~ Ln_income+ AGE+ ADEPCNT+ OWNRENT+ EXP_INC)
 
-glm.poisson <- glm(model, data=credit_sub, family = poisson())
+glm.poisson <- glm(model2, data=credit_sub, family = poisson())
 dispersiontest(glm.poisson,trafo=1)
 #poissonmfx(glm.poisson, data=credit_sub)
 
 phat <- predict(glm.poisson, type="response")
 
 ## create the plot
-ggplot(credit_sub[,], aes(x = Ln_income[], y = phat[], colour = MAJORDRG[])) +
-  geom_point(aes(y = MAJORDRG[]), alpha=.5) +
-  geom_line(size = 1) +
-  labs(x = "Ln_income", y = "Expected Major Derog")
+# ggplot(credit_sub[,], aes(x = Ln_income[], y = phat[], colour = MAJORDRG[])) +
+#   geom_point(aes(y = MAJORDRG[]), alpha=.5) +
+#   geom_line(size = 1) +
+#   labs(x = "Ln_income", y = "Expected Major Derog")
 
 
-glm.quasipoisson <- glm(model, data=credit_sub, family = quasipoisson())
+glm.quasipoisson <- glm(model2, data=credit_sub, family = quasipoisson())
 
-glm.ngbin <- glm.nb(model, data=credit_sub)
+glm.ngbin <- glm.nb(model2, data=credit_sub)
+credit_sub1 <- subset(credit_sub, MAJORDRG>0)
 
+m1 <- vglm(model2, family = pospoisson(), data = credit_sub1)
+
+m2 <- vglm(model2, family = posnegbinomial(), data = credit_sub1)
 
 ```
 
@@ -541,23 +549,41 @@ New Model:
 
 Estimate this model using Poisson regression for credit cardholders only. What is the effect of 10% increase in income on the expected value (mean) of the number of major derogatory reports? Is Poisson regression a good specification for the data at hand?
 
+* The poisson regression is not a bad model for this data but we need to be aware of overdispersion issues. When we test for over overdispersion we see there is overdispersion and we can use a quaipoisson regression to allow our Dispersion parameter to be estimated or we could use a negative binomial regression to deal with the overdispersion, which is the next regression we run.
+
 ### (2.2.b)
 
 Estimate this model using negative binomial regression for credit cardholders only. What is the effect of 10% increase in income on the expected value (mean) of the number of major derogatory reports?
+
+* Estimating with the negative binomial take into account the overdispersion problems from the poisson model and allows mean and variance to be different. We obtain different paramater estimates while using this negative binomial. It appears the negative binomial regression model is a more appropriate model to employ given this specific data set.
 
 ### (2.2.c)
 
 Estimate the two models taking into account the truncation.What is the effect of 10% increase in income on the expected value (mean) of the number of major derogatory reports?
 
+* Figures 1 and 2 below show the SAS regression output from using the Truncated Poisson and the Truncated Negative Binomial models.  It is generally advisable to employ a censored model over a truncated model because the censored model will preserve valuable data while the truncated model throws away data. We can clearly see that while using a truncated model we obtain paramater estimates that are different from previous results, in fact, in several situations we see a sign flip while employing a truncated model. This is alarming. 
+
+\newpage
+
 ```{r echo=FALSE, message=FALSE, results='asis', cache=F, warning=FALSE}
 
 stargazer(credit_sub, header=F, type="latex", summary = T, font.size = "small", notes= c(), notes.align= "l", flip = F, float = T, float.env = "table", title="Summary Statistics: Problem 2.3", median = F)
 
-stargazer(glm.poisson, glm.quasipoisson, glm.ngbin, header=F, type="latex", summary = T, font.size = "small", notes= c(), notes.align= "l", flip = F, float = T, float.env = "table", title="Regression output used to answer Problem 2.3", median = F)
+stargazer(glm.poisson, glm.ngbin, header=F, type="latex", summary = T, font.size = "small", notes= c(), notes.align= "l", flip = F, float = T, float.env = "table", title="Regression output used to answer Problem 2.3", median = F)
 
 ```
 
+\begin{figure}[hb!]
+\centering
+\includegraphics [width=15cm]{/Users/malooney/Google Drive/digitalLibrary/*Econometrics3/Econometrics3/HW2_R_code/trunc1.png}
+\caption{SAS Output of Truncated Poisson}
+\end{figure}
 
+\begin{figure}[hb!]
+\centering
+\includegraphics [width=15cm]{/Users/malooney/Google Drive/digitalLibrary/*Econometrics3/Econometrics3/HW2_R_code/nbinom1.png}
+\caption{SAS Output of Truncated Negative Binomial}
+\end{figure}
 
 
 
