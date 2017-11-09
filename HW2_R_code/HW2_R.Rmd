@@ -1,40 +1,37 @@
 ---
 title: "HW2 Econometrics 3"
 author: "Matthew Aaron Looney"
-date: "10/04/2017"
+date: "10/08/2017"
 output: pdf_document
-
-header-includes:
-  - \usepackage{xcolor}
 ---
 
 ```{r HW2 Problem 1 data import, echo=FALSE, message=FALSE, results='asis', cache=F}
 
-cat("\014")
-rm(list=ls())
-set.seed(12345)
-
-library(readr)
-library(gvlma)
-library(lmtest)
-library(stargazer)
-
-require(foreign)
-require(nnet)
-require(ggplot2)
-require(reshape2)
-
-coffee <- read_csv("~/Google Drive/digitalLibrary/*Econometrics3/Econometrics3/HW2_R_code/GROCERY.csv", col_names = TRUE)
-
-week1379 <- subset(coffee, WEEK==1379 & city=="Pittsfield" & VOL_EQ != 0)
-
-price <- data.frame(price= week1379$DOLLARS/ (week1379$UNITs* week1379$VOL_EQ))
-
-week1379_Pitts_price <- cbind(week1379, price) 
-
-multinomial <- read_excel("~/Google Drive/digitalLibrary/*Econometrics3/Econometrics3/HW2_R_code/multinomial.xlsx")
-model3 <- formula(choice ~income+ size+ race)
-test <- multinom(model3, data = multinomial)
+# cat("\014")
+# rm(list=ls())
+# set.seed(12345)
+# 
+# library(readr)
+# library(gvlma)
+# library(lmtest)
+# library(stargazer)
+# 
+# require(foreign)
+# require(nnet)
+# require(ggplot2)
+# require(reshape2)
+# 
+# coffee <- read_csv("~/Google Drive/digitalLibrary/*Econometrics3/Econometrics3/HW2_R_code/GROCERY.csv", col_names = TRUE)
+# 
+# week1379 <- subset(coffee, WEEK==1379 & city=="Pittsfield" & VOL_EQ != 0)
+# 
+# price <- data.frame(price= week1379$DOLLARS/ (week1379$UNITs* week1379$VOL_EQ))
+# 
+# week1379_Pitts_price <- cbind(week1379, price) 
+# 
+# multinomial <- read_excel("~/Google Drive/digitalLibrary/*Econometrics3/Econometrics3/HW2_R_code/multinomial.xlsx")
+# model3 <- formula(choice ~income+ size+ race)
+# test <- multinom(model3, data = multinomial)
 
 
 
@@ -97,13 +94,10 @@ credit_sub <- subset(credit, CARDHLDR==1)
 ols_credit_sub <- lm(model, data=credit_sub)
 tobit_Trunc_left0 <- truncreg(model, data=credit_sub, subset = LOGSPEND>=0)
 
-
-
-
 model2 <- model <- formula(MAJORDRG~ Ln_income+ AGE+ ADEPCNT+ OWNRENT+ EXP_INC)
 
 glm.poisson <- glm(model2, data=credit_sub, family = poisson())
-dispersiontest(glm.poisson,trafo=1)
+#dispersiontest(glm.poisson,trafo=1)
 #poissonmfx(glm.poisson, data=credit_sub)
 
 phat <- predict(glm.poisson, type="response")
@@ -125,6 +119,58 @@ m1 <- vglm(model2, family = pospoisson(), data = credit_sub1)
 m2 <- vglm(model2, family = posnegbinomial(), data = credit_sub1)
 
 ```
+
+\newpage
+
+# Problem 2
+
+Consumer’s Behavior: The accompanying data describes the weekly buying behavior of consumers in Pittsfield, Massachusetts and Eau Claire, Wisconsin for coffee across different supermarket chains in each city from June 18, 2001 to July 30, 2006. Your task is to analyze the effect of the factors that affect consumer’s brand and chain choice. To start your analysis, you decide to pick only one city and one week (pick a week that gives you at least 200 observations). The data (Homescan1 data from Information Resource infoscan, IRIconsist of panelist id, panelist income (category), race, and household size; the week, the number of units purchased by the panelist, the dollar amount spent (this, is not the price. The price can be obtained using the dollar amount, the units, and the volume equivalent), universal product code (COLUPC), the city, the chain, the volume equivalent,2 and the brand. In what follows, we assume that brand j purchased in chain k is different than bran j purchased in chain l, i.e., there is differentiation at the brand and chain level. Perform the following analysis:
+
+## (1.a)
+
+Estimate a multinomial logit model to explain the brand/chain choice using demographic variables. Choose a brand and estimate the effect of moving from income category .
+
+\begin{figure}[hb!]
+\centering
+\includegraphics [height=10cm]{/Users/malooney/Google Drive/digitalLibrary/*Econometrics3/Econometrics3/HW2_R_code/multinomial.png}
+\caption{SAS Output of Multinomial Logit}
+\end{figure}
+
+\newpage
+
+## (1.b)
+
+Estimate a conditional logit model to explain the brand/chain choice using the price and the brand and chain dummy variables as product characteristics. Choose a brand and estimate the effect of decreasing the price by $1.25.
+
+\begin{figure}[hb!]
+\centering
+\includegraphics [height=6cm]{/Users/malooney/Google Drive/digitalLibrary/*Econometrics3/Econometrics3/HW2_R_code/conditional.png}
+\caption{SAS Output of Conditional Logit}
+\end{figure}
+
+## (1.c)
+
+Estimate a mixed logit model to explain the brand/chain choice using demographic variables and the price.
+
+\begin{figure}[hb!]
+\centering
+\includegraphics [height=9cm]{/Users/malooney/Google Drive/digitalLibrary/*Econometrics3/Econometrics3/HW2_R_code/mixedLogit.png}
+\caption{SAS Output of Mixed Logit}
+\end{figure}
+
+\newpage
+
+## (1.d)
+
+Estimate a nested logit model with the upper level being the chain (use chain dummy variables as explanatory variables) and the lower level the brands (use the price as the explanatory variable). Test the validity of IIA.
+
+\begin{figure}[hb!]
+\centering
+\includegraphics [height=9cm]{/Users/malooney/Google Drive/digitalLibrary/*Econometrics3/Econometrics3/HW2_R_code/nestedLogit.png}
+\caption{SAS Output of Nested Logit}
+\end{figure}
+
+* Sadly I am not able to get the IIA macro working in SAS so I am unable to test for IIA using the Hausman's specification test for IIA.
 
 \newpage
 
