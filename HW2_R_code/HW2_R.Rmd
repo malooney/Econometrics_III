@@ -32,6 +32,10 @@ price <- data.frame(price= week1379$DOLLARS/ (week1379$UNITs* week1379$VOL_EQ))
 
 week1379_Pitts_price <- cbind(week1379, price) 
 
+multinomial <- read_excel("~/Google Drive/digitalLibrary/*Econometrics3/Econometrics3/HW2_R_code/multinomial.xlsx")
+model3 <- formula(choice ~income+ size+ race)
+test <- multinom(model3, data = multinomial)
+
 
 
 ```
@@ -44,6 +48,7 @@ rm(list=ls())
 set.seed(12345)
 
 library(readr)
+library(readxl)
 library(gvlma)
 library(lmtest)
 library(stargazer)
