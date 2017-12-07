@@ -98,15 +98,15 @@ adf3 <- adf.test(rPCECC96_diff_diff)
 
 ## b) Plot and examine the autocorrelation and partial autocorrelation functions (ACF and PACF).
 
-* Acording to the above ACF and PACF plots (Plot Series 1) the series in non-stationary. The ACF decays very slowly over time, indicating the presence of deterministic or stochastic trend.
+* According to the above ACF and PACF plots (Plot Series 1) the series in non-stationary. The ACF decays very slowly over time, indicating the presence of deterministic or stochastic trend.
 
 ## c) Is the CPI series stationary? Formally test the stationarity of the series.
 
-* When we preform the Augmented Dicky-Fuller test on the original data we obtain a p-value of `r adf1$p.value ` which indicates we FAIL to REJECT the null and determine the series is nonstationary.
+* When we preform the Augmented Dicky-Fuller test on the original data we obtain a p-value of `r adf1$p.value ` which indicates we FAIL to REJECT the null and determine the series is non-stationary.
 
-* When we take the first difference of the series, (Plot Series 2) we see some indications that ther series has become stationary, but it is still possible to see a trend in the data. When we formally test the differenced data with the ADF test we obtain a p-value of `r adf2$p.value ` which indicates the series is stationary.
+* When we take the first difference of the series, (Plot Series 2) we see some indications that the series has become stationary, but it is still possible to see a trend in the data. When we formally test the differenced data with the ADF test we obtain a p-value of `r adf2$p.value ` which indicates the series is stationary.
 
-* Just out of curiosity I take the second difference of the CPI data and plot the series (Plot Series 3). This time series now apeears to be completely stationary. It is interesting to see the non-constant variance though; which will be addressed in problem 2. When testing with ADF we obtain a p-value of `r adf3$p.value `. Since the p-value indicates stationarity and the plot of the second differenced data look better; I will assume the data is stationary with two differences.
+* Just out of curiosity I take the second difference of the CPI data and plot the series (Plot Series 3). This time series now appears to be completely stationary. It is interesting to see the non-constant variance though; which will be addressed in problem 2. When testing with ADF we obtain a p-value of `r adf3$p.value `. Since the p-value indicates stationarity and the plot of the second differenced data look better; I will assume the data is stationary with two differences.
 
 ## d) Based on questions (b) and (c) propose at least three ARIMA models to study the CPI series and use all data in the sample to estimate them.
 
@@ -125,7 +125,7 @@ texreg(list(model1, model2, model3), float.pos = "h")
 ```
 
 * The above summary, (Table 1) shows the estimation output of the three ARIMA models. Model 1= ARIMA(4, 2, 1); model 2= ARIMA(0, 2, 1); model 3= ARIMA(0,2,2).  
-When we consider the AIC criterion we conclude that model 2 (ARIMA(0, 2, 1)) has the lowerest AIC and thus is the best model out of the three.
+When we consider the AIC criterion we conclude that model 2 (ARIMA(0, 2, 1)) has the lowest AIC and thus is the best model out of the three.
 
 ## f) Compare the forecasting power of the three models by leaving out the last 50 observations. A graph showing the actual and the forecasted observed may help in this task.
 
@@ -158,7 +158,7 @@ lines(rPCECC96, type="o", pch=4, col= "black")
 
 ```
 
-* It is not easy to assertain which model does a better job at forcating based on the above plots. There is a structural break in the data which is not modeled well by any of the models. However, aside from the structural break issue, the remainder of the data is resonably modeled by the forcast up to about four or five quarters. Beyond about five quarters the forcasting ability of the ARIMA(0,2,1) starts to fall apart.
+* It is not easy to ascertain which model does a better job at forecasting based on the above plots. There is a structural break in the data which is not modeled well by any of the models. However, aside from the structural break issue, the remainder of the data is reasonably modeled by the forecast up to about four or five quarters. Beyond about five quarters the forecasting ability of the ARIMA(0,2,1) starts to fall apart.
 
 # In the previous problem, we assumed the CPI series has a constant variance. This assumption might not be appropriate.
 
@@ -211,7 +211,7 @@ summary(a2)
 
 ```
 
-* When we estimate the ARIMA(0,2,1)-ARCH(4) model a few things stick out. First, the paramater on the MA(1) portion of the ARMIA(0,2,1) is significant. Second, the Alpha1 and Alpha2 paramater are significant, however, the Alpha3 and Alpha4 paramaters are not. This would indicate that a ARCH(1) or ARCH(2) may be a better model than the ARCH(4). I would say, overall, the ARCH(4) model is not the appropriate model to implement for this time series.
+* When we estimate the ARIMA(0,2,1)-ARCH(4) model a few things stick out. First, the parameter on the MA(1) portion of the ARMIA(0,2,1) is significant. Second, the Alpha1 and Alpha2 parameter are significant, however, the Alpha3 and Alpha4 parameters are not. This would indicate that a ARCH(1) or ARCH(2) may be a better model than the ARCH(4). I would say, overall, the ARCH(4) model is not the appropriate model to implement for this time series.
 
 ## d) Estimate a GARCH(1,1) for the CPI series and interpret the results.
 
@@ -223,7 +223,7 @@ summary(a3)
 
 ```
 
-* The ARIMA(0,2,1)-GARCH(1,1) seems to preform better than the other model variants. In the previous model ARMIA(0,2,1)-ARCH(4), when we examined the QQ-Plot it appeared the errors were not following a nomal distribution. In the ARIMA(0,2,1)-GARCH(1,1) we used a student t-innovation for the conditional distribution. By viewing the QQ-Plot we see that using the student t-innovation has helped with the normality of the errors but according to the Jarque-Bera Test statistic the models errors are still not strictly following a normal distridution. The papramaters on the MA(1), Alpha1 and Beta1 are significant and the Q(10) and Q(20) most all point to a good model fit. Overall, I would say the ARIMA(0,2,1)-GARCH(1,1) is a good model for this time series.
+* The ARIMA(0,2,1)-GARCH(1,1) seems to preform better than the other model variants. In the previous model ARMIA(0,2,1)-ARCH(4), when we examined the QQ-Plot it appeared the errors were not following a normal distribution. In the ARIMA(0,2,1)-GARCH(1,1) we used a student t-innovation for the conditional distribution. By viewing the QQ-Plot we see that using the student t-innovation has helped with the normality of the errors but according to the Jarque-Bera Test statistic the models errors are still not strictly following a normal distribution. The parameters on the MA(1), Alpha1 and Beta1 are significant and the Q(10) and Q(20) most all point to a good model fit. Overall, I would say the ARIMA(0,2,1)-GARCH(1,1) is a good model for this time series.
 
 # The number of customer arrivals per unit time at a supermarket checkout counter follows a Poisson distribution. Consider a random sample of the following 10 observations from this Poisson distribution $y_i$ =5,0,1,1,0,3,2,3,4,1. The density of each observation is given by:
 
