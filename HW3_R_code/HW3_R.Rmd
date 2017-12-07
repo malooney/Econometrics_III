@@ -1,0 +1,352 @@
+---
+title: "HW3 Econometrics 3"
+author: "Matthew Aaron Looney"
+date: "12/4/2017"
+output: 
+  pdf_document: 
+    number_sections: yes
+    toc: yes
+---
+
+```{r echo=FALSE, message=FALSE, results='asis', cache=F, warning=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+cat("\014")
+rm(list=ls())
+
+require(forecast)
+require(Quandl)
+require(ggplot2)
+require(readr)
+require(tseries)
+require(urca)
+library(stargazer)
+library(texreg)
+library(fGarch)
+library(rugarch)
+library(vars)
+
+```
+
+\newpage
+
+```{r echo=FALSE, message=FALSE, results='asis', cache=F, warning=FALSE}
+
+Quandl.api_key('Ltw-PAye5rkz6MwzLNx-')
+
+rPCECC96 <- Quandl("FRED/CPIAUCSL", type="zoo", collapse="quarterly", start_date="1960-01-01", end_date="2012-12-01")
+
+rPCECC96_diff <- diff(rPCECC96)
+
+rPCECC96_diff_diff <- diff(diff(rPCECC96))
+
+```
+
+# 1 The file CPIdata.xlsx contains quarterly data on U.S. CPI from 1960Q1 to 2012Q4.
+
+```{r echo=FALSE, fig.height=10, fig.width=20}
+
+par(mfrow=c(1,1)) 
+
+plot(rPCECC96, main="Plot Series 1: Original Data - CPI 1960Q1 to 2012Q4")
+
+par(mfrow=c(1,2)) 
+
+forecast::Acf(coredata(rPCECC96), type="correlation", ylab="", main="Sample ACF")
+
+forecast::Acf(coredata(rPCECC96), type="partial", ylab="", main="Sample PACF")
+
+adf1 <- adf.test(rPCECC96)
+
+```
+
+```{r echo=FALSE, fig.height=10, fig.width=20}
+
+par(mfrow=c(1,1)) 
+
+plot(rPCECC96_diff, main = expression(paste("Plot Series 2: ", nabla, "Data - CPI 1960Q1 to 2012Q4")))
+
+par(mfrow=c(1,2)) 
+
+forecast::Acf(coredata(rPCECC96_diff), type="correlation", ylab="", main="Sample ACF")
+
+forecast::Acf(coredata(rPCECC96_diff), type="partial", ylab="", main="Sample PACF")
+
+adf2 <- adf.test(rPCECC96_diff)
+
+```
+
+```{r echo=FALSE, fig.height=10, fig.width=20, warning=FALSE}
+
+par(mfrow=c(1,1)) 
+
+plot(rPCECC96_diff_diff, main = expression(paste("Plot Series 3: ", nabla, "(", nabla, " Data)", " - CPI 1960Q1 to 2012Q4")))
+
+par(mfrow=c(1,2)) 
+
+forecast::Acf(coredata(rPCECC96_diff_diff), type="correlation", ylab="", main="Sample ACF")
+
+forecast::Acf(coredata(rPCECC96_diff_diff), type="partial", ylab="", main="Sample PACF")
+
+adf3 <- adf.test(rPCECC96_diff_diff)
+
+```
+
+## a) Plot the series against the time. Does the series appear to be stationary?
+
+* According to the above Plot Series 1: Original Data, the series is clearly not stationary.
+
+## b) Plot and examine the autocorrelation and partial autocorrelation functions (ACF and PACF).
+
+* Acording to the above ACF and PACF plots (Plot Series 1) the series in non-stationary. The ACF decays very slowly over time, indicating the presence of deterministic or stochastic trend.
+
+## c) Is the CPI series stationary? Formally test the stationarity of the series.
+
+* When we preform the Augmented Dicky-Fuller test on the original data we obtain a p-value of `r adf1$p.value ` which indicates we FAIL to REJECT the null and determine the series is nonstationary.
+
+* When we take the first difference of the series, (Plot Series 2) we see some indications that ther series has become stationary, but it is still possible to see a trend in the data. When we formally test the differenced data with the ADF test we obtain a p-value of `r adf2$p.value ` which indicates the series is stationary.
+
+* Just out of curiosity I take the second difference of the CPI data and plot the series (Plot Series 3). This time series now apeears to be completely stationary. It is interesting to see the non-constant variance though; which will be addressed in problem 2. When testing with ADF we obtain a p-value of `r adf3$p.value `. Since the p-value indicates stationarity and the plot of the second differenced data look better; I will assume the data is stationary with two differences.
+
+## d) Based on questions (b) and (c) propose at least three ARIMA models to study the CPI series and use all data in the sample to estimate them.
+
+* According to the above ACF and PACF plots, (Plot Series 3) there is some ambiguity with identifying the proper ARIMA model to employ to model the time series. The three models I will use in this problem are: ARIMA(4, 2, 1); ARIMA(0, 2, 1); ARIMA(0,2,2).
+
+## e) Use AIC and BIC to pick the best of the three models.
+
+```{r echo=FALSE, results='asis', warning=FALSE, message=FALSE}
+
+model1 <- Arima(rPCECC96, c(4, 2, 1))
+model2 <- Arima(rPCECC96, c(0, 2, 1))
+model3 <- Arima(rPCECC96, c(0, 2, 2))
+
+texreg(list(model1, model2, model3), float.pos = "h")
+
+```
+
+* The above summary, (Table 1) shows the estimation output of the three ARIMA models. Model 1= ARIMA(4, 2, 1); model 2= ARIMA(0, 2, 1); model 3= ARIMA(0,2,2).  
+When we consider the AIC criterion we conclude that model 2 (ARIMA(0, 2, 1)) has the lowerest AIC and thus is the best model out of the three.
+
+## f) Compare the forecasting power of the three models by leaving out the last 50 observations. A graph showing the actual and the forecasted observed may help in this task.
+
+```{r echo=FALSE}
+
+rPCECC96_clip <- rPCECC96[1:162, ]
+
+model1.1 <- Arima(rPCECC96_clip, c(4, 2, 1))
+m1.fcast <- forecast(model1.1, h=50)
+par(mfrow=c(1,2), cex=0.5)
+plot(m1.fcast, type="o", xlim=c(1995, 2012), main="Model 1: Forecasts for ARIMA(4,2,1)")
+legend(1995, 300, legend=c("Original Data","Forecasted Data","Fitted Data"), col=c("black", "blue", "red"), lty=c(1,1,1))
+lines(m1.fcast$mean, type="p", pch=16, col="blue")
+lines(rPCECC96, type="o", pch=4, col= "black")
+
+model2.1 <- Arima(rPCECC96_clip, c(0, 2, 1))
+m2.1.fcast <- forecast(model2.1, h=50)
+plot(m2.1.fcast, type="o", xlim=c(1995, 2012), main="Model 1: Forecasts for ARIMA(0,2,1)")
+legend(1995, 300, legend=c("Original Data","Forecasted Data","Fitted Data"), col=c("black", "blue", "red"), lty=c(1,1,1))
+lines(m2.1.fcast$mean, type="p", pch=16, col="blue")
+lines(rPCECC96, type="o", pch=4, col= "black")
+
+par(mfrow=c(1,1), cex=0.5)
+model3.1 <- Arima(rPCECC96_clip, c(0, 2, 2))
+m3.1.fcast <- forecast(model3.1, h=50)
+plot(m3.1.fcast, type="o", xlim=c(1995, 2012), main="Model 1: Forecasts for ARIMA(0,2,2)")
+legend(1995, 300, legend=c("Original Data","Forecasted Data","Fitted Data"), col=c("black", "blue", "red"), lty=c(1,1,1))
+lines(m3.1.fcast$mean, type="p", pch=16, col="blue")
+lines(rPCECC96, type="o", pch=4, col= "black")
+
+```
+
+* It is not easy to assertain which model does a better job at forcating based on the above plots. There is a structural break in the data which is not modeled well by any of the models. However, aside from the structural break issue, the remainder of the data is resonably modeled by the forcast up to about four or five quarters. Beyond about five quarters the forcasting ability of the ARIMA(0,2,1) starts to fall apart.
+
+# In the previous problem, we assumed the CPI series has a constant variance. This assumption might not be appropriate.
+
+## a) Plot the squared residuals from your best model from problem 1. Can we assume the series is a constant variance one?
+
+```{r echo=FALSE, fig.height=10, fig.width=20, warning=FALSE}
+
+model2_sqrRes <- (model2$residuals)^2
+
+plot(model2_sqrRes)
+
+```
+
+* It is clear by the above plot of the squared residuals of the ARIMA(0,2,1) model that the variance is not constant.
+
+## b) Formally test for ARCH or GARCH.
+
+```{r echo=FALSE}
+
+par(mfrow=c(2,2), cex=0.5)
+
+Acf(model2$residuals, type= "correlation", lag.max = 24)
+
+Acf(model2$residuals, type= "partial", lag.max = 24)
+
+Acf(model2$residuals^2, type= "correlation", lag.max = 24)
+
+Acf(model2$residuals^2, type= "partial", lag.max = 24)
+
+```
+
+* When we look at the PACF of the Squared Residuals in the above plot we can see that the order of the ARCH model should be (G)ARCH(1).  
+We can formally test the time series using the Ljung-Box Test. In the below results we see that the Ljung-Box Test shows we can reject the null hypothesis (independence) on variance, so it has significant serial correlation, in other words ARCH or GARCH effect.
+
+```{r echo=FALSE}
+
+Box.test(rPCECC96_diff_diff, type="Ljung-Box")
+#a2 <- garchFit(~ arma(0,1) + garch(1,0), data=coredata(rPCECC96_diff_diff), trace=F)
+#summary(a2)
+
+```
+
+## c) Estimate and ARCH(4) for the CPI series and interpret the results.
+
+```{r echo=FALSE}
+
+a2 <- garchFit(~ arma(0,1) + garch(4,0), data=coredata(rPCECC96_diff_diff), trace=F)
+#a2 <- garchFit(~ garch(4,0), data=coredata(rPCECC96_diff_diff), trace=F)
+summary(a2)
+
+```
+
+* When we estimate the ARIMA(0,2,1)-ARCH(4) model a few things stick out. First, the paramater on the MA(1) portion of the ARMIA(0,2,1) is significant. Second, the Alpha1 and Alpha2 paramater are significant, however, the Alpha3 and Alpha4 paramaters are not. This would indicate that a ARCH(1) or ARCH(2) may be a better model than the ARCH(4). I would say, overall, the ARCH(4) model is not the appropriate model to implement for this time series.
+
+## d) Estimate a GARCH(1,1) for the CPI series and interpret the results.
+
+```{r echo=FALSE}
+
+a3 <- garchFit(~ arma(0,1) + garch(1,1), data=coredata(rPCECC96_diff_diff), trace=F, cond.dist = "std")
+#a3 <- garchFit(~ garch(1,1), data=coredata(rPCECC96_diff_diff), trace=F)
+summary(a3)
+
+```
+
+* The ARIMA(0,2,1)-GARCH(1,1) seems to preform better than the other model variants. In the previous model ARMIA(0,2,1)-ARCH(4), when we examined the QQ-Plot it appeared the errors were not following a nomal distribution. In the ARIMA(0,2,1)-GARCH(1,1) we used a student t-innovation for the conditional distribution. By viewing the QQ-Plot we see that using the student t-innovation has helped with the normality of the errors but according to the Jarque-Bera Test statistic the models errors are still not strictly following a normal distridution. The papramaters on the MA(1), Alpha1 and Beta1 are significant and the Q(10) and Q(20) most all point to a good model fit. Overall, I would say the ARIMA(0,2,1)-GARCH(1,1) is a good model for this time series.
+
+# The number of customer arrivals per unit time at a supermarket checkout counter follows a Poisson distribution. Consider a random sample of the following 10 observations from this Poisson distribution $y_i$ =5,0,1,1,0,3,2,3,4,1. The density of each observation is given by:
+
+\[f({y_i}) = \frac{{{e^{ - \theta }}{\theta ^{{y_i}}}}}{{{y_i}!}}\]
+
+```{r echo=FALSE, warning=FALSE}
+
+y <- matrix(c(5, 1, 1, 1, 0, 3, 2, 3, 4, 1), nrow=10)
+
+poisson.lik<-function(params, y){
+  
+  theta <- params[1]
+  
+n <- nrow(y)
+
+logl <- sum(y)* log(theta)- n* theta
+
+return(logl)
+
+}
+
+hw3.mle <- function(par0, y)
+{
+  
+   temp.mle <- optim(par0, poisson.lik, y=y, method="SANN", 
+                     control=list(fnscale= -1, maxit = 30000, reltol=sqrt(.Machine$double.eps)^2), hessian= T)
+  
+#   temp.mle <- ucminf(par0, hw1.loglike, y=y, x1=x1, x2=x2)
+  
+   if(temp.mle$convergence!=0)
+     stop("!!!DID NOT CONVERGE!!!")
+  
+  return(temp.mle)
+}
+
+par0 <- 1
+
+mle.hw3 <- hw3.mle(par0=par0, y=y)
+
+```
+
+## a) What is the likelihood function of this process?
+
+\[L(\theta |{y_i}) = \mathop \Pi \limits_{i = 1}^n \frac{{{e^{ - \theta }}{\theta ^{{y_i}}}}}{{{y_i}!}} \propto {\theta ^\psi }{e^{ - n\theta }};{\text{  where,  }}\psi  = \sum\limits_{i = 1}^n {{y_i}} \]
+
+## b) Using the sample, find the maximum likelihood estimate of $\theta$.
+
+* The MLE estimate of $\theta=$ `r mle.hw3$par `.
+
+## c) You consider to estimate $\theta$ using Bayesian procedure. To this end, you use Gamma distribution as a prior for $\theta$. Derive the posterior distribution for $\theta$.
+
+* The conjugate prior in our problem is given by the *gamma* distribution which has a pdf proportional to:
+
+\[{\theta ^{\alpha  - 1}}{e^{ - \beta \theta }}{\text{;   for  }}0 < \theta  < \infty \]
+
+The posterior pdf is proportional to:
+
+\[{\theta ^{\alpha  - 1}}{e^{ - \beta \theta }}\left( {{\theta ^\psi }{e^{ - n\theta }}} \right) = {\theta ^{\alpha  + \psi  - 1}}{e^{ - (\beta  + n)\theta }}\]
+
+The above posterior pdf is proportional to the pdf of a $gamma\left( {\alpha  + \sum\limits_{i = 1}^n {{x_i},\beta  + n} } \right)$
+
+
+```{r echo=FALSE}
+
+phi <- sum(y)
+n <- nrow(y)
+mu_0 <- mean(y)
+sigma2_0 <- var(y)
+
+b <- mu_0/sigma2_0
+a <- mu_0*b
+
+
+
+gamma_draws <- rgamma(10000, shape= a+phi, rate= b+n)
+
+mu_theta <- mean(gamma_draws)
+
+var_theta <- var(gamma_draws)
+
+
+#plot(density(gamma_draws))
+
+#plot(ecdf(gamma_draws))
+
+  Alpha=0.05
+  zcrit <- qnorm(1-Alpha/2)
+  ci <- zcrit*(sqrt(var_theta))
+  
+  upper_ci <- mu_theta+ci
+  lower_ci <- mu_theta-ci
+  
+  probless4 <- ifelse(gamma_draws<4, 1, 0)
+  
+ probless4_ans <-  100*(sum(probless4)/length(gamma_draws))
+
+```
+
+## d) Using this posterior distribution, generate 10,000 draws and do the following:
+
+### i) Plot the cumulative density function (CDF).
+
+```{r echo=FALSE}
+
+plot(ecdf(gamma_draws))
+
+```
+
+### ii) What is the mean of $\theta$?
+
+* The posterior mean of $\theta=$ `r mean(gamma_draws) `.
+
+### iii) What is the variance of $\theta$?
+
+* The posterior variance of $\theta=$ `r var(gamma_draws) `.
+
+### iv) Construct a confidence interval for $\theta$.
+
+* The 95% confidence interval for $\theta=$ ( `r lower_ci `, `r upper_ci ` ).
+
+### v) What is the probability that we observe less than 4 customers per minute?
+
+* The probability that we observe less than 4 customers per minute is `r probless4_ans `%.
+
+
+
