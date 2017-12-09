@@ -231,7 +231,7 @@ summary(a3)
 
 ```{r echo=FALSE, warning=FALSE}
 
-y <- matrix(c(5, 1, 1, 1, 0, 3, 2, 3, 4, 1), nrow=10)
+y <- matrix(c(5, 0, 1, 1, 0, 3, 2, 3, 4, 1), nrow=10)
 
 poisson.lik<-function(params, y){
   
@@ -273,6 +273,8 @@ mle.hw3 <- hw3.mle(par0=par0, y=y)
 
 * The MLE estimate of $\theta=$ `r mle.hw3$par `.
 
+* The closed form solution of the MLE estimate of $\theta=$ 2.0.
+
 ## c) You consider to estimate $\theta$ using Bayesian procedure. To this end, you use Gamma distribution as a prior for $\theta$. Derive the posterior distribution for $\theta$.
 
 * The conjugate prior in our problem is given by the *gamma* distribution which has a pdf proportional to:
@@ -290,8 +292,8 @@ The above posterior pdf is proportional to the pdf of a $gamma\left( {\alpha  + 
 
 phi <- sum(y)
 n <- nrow(y)
-mu_0 <- mean(y)
-sigma2_0 <- var(y)
+mu_0 <- 2
+sigma2_0 <- 1
 
 b <- mu_0/sigma2_0
 a <- mu_0*b
